@@ -13,7 +13,7 @@ One class, one job. Each row ends with the class's fields, so this table is also
 | `Shoe` | Build and shuffle three decks into a chain, deal one card at a time, say when to reshuffle. Fields: `LinkedChain<Card> cards`, `Random rng`, `static final int CUT_CARD = 32`. |
 | `Hand` | Hold one participant's cards and compute the total with aces as 11 or 1; one each for player and dealer. Field: `List<Card> cards`. |
 | `Bankroll` | Hold the balance and enforce the money rules: positive deposit, bet between 1 and the balance. Field: `int balance` (whole dollars). |
-| `RoundResult` (record); `Outcome`, `Action` (enums) | Describe one finished round; name the outcomes (`BLACKJACK`, `WIN`, `PUSH`, `LOSS`, `BUST`) and choices (`HIT`, `STAND`, `DOUBLE`). Fields: `int round`, `Outcome outcome`, `int bet`, `int netChange`. |
+| `RoundResult` (record); `Outcome`, `Action` (enums) | Describe one finished round; name the outcomes (`BLACKJACK`, `WIN`, `PUSH`, `LOSS`, `BUST`) and choices (`HIT`, `STAND`). Fields: `int round`, `Outcome outcome`, `int bet`, `int netChange`. |
 | `GameHistory` | Keep every `RoundResult` in a chain; report wins, losses, win rate. Field: `LinkedChain<RoundResult> rounds`. |
 | `CardHistory` | Keep every card dealt since the last shuffle in a chain, for review. Field: `LinkedChain<Card> seen`. |
 | `CardCounter` | Hold the Hi-Lo running count, convert it to a true count, suggest a bet size in units. Field: `int runningCount`. |
@@ -24,7 +24,7 @@ One class, one job. Each row ends with the class's fields, so this table is also
 
 The chain is instantiated three times: undealt cards in `Shoe`, dealt cards in `CardHistory`, finished rounds in `GameHistory`. Each owner decides what to add and when; the chain only stores.
 
-**Why this split.** Each bad-input rule gets one home. Money rules live in `Bankroll` because every path that changes the balance (deposit, bet, double down, payout) goes through it, so no caller can skip the check. Text parsing lives in `ConsoleUI` because a non-numeric bet is a keyboard problem, and one `promptInt` serves deposits and bets. We rejected a single `Player` class holding hand, balance and history: it would change for three unrelated reasons, and the dealer needs a `Hand` too. We also rejected a `shuffle()` on `LinkedChain`, the scope's open question: the `Shoe` constructor builds the 156 cards in an `ArrayList`, calls `Collections.shuffle`, and adds each to a new chain, so the randomness stays with the class that owns the deck.
+**Why this split.** Each bad-input rule gets one home. Money rules live in `Bankroll` because every path that changes the balance (deposit, bet, payout) goes through it, so no caller can skip the check. Text parsing lives in `ConsoleUI` because a non-numeric bet is a keyboard problem, and one `promptInt` serves deposits and bets. We rejected a single `Player` class holding hand, balance and history: it would change for three unrelated reasons, and the dealer needs a `Hand` too. We also rejected a `shuffle()` on `LinkedChain`, the scope's open question: the `Shoe` constructor builds the 156 cards in an `ArrayList`, calls `Collections.shuffle`, and adds each to a new chain, so the randomness stays with the class that owns the deck.
 
 **Two chosen numbers.** Money is whole dollars; a 3:2 payout on an odd bet uses integer division (`bet * 3 / 2`, so a $5 blackjack pays $7) so every prompt stays a whole number. The cut card is 32 because that guarantees a round can never empty the shoe: the longest non-busting hand in a three-deck shoe is 16 cards (twelve aces as 1 each, then four twos), the dealer's longest is 15 (twelve aces, then three twos reaches 18 and the rule says stand), both cannot hold all twelve aces, so 31 is a loose bound and we reshuffle between rounds when fewer than 32 remain.
 
@@ -86,11 +86,11 @@ Every operation is type-safe. `add`, `contains`, `count` and `remove(T)` take `T
 | `double CardCounter.trueCount(int cardsRemaining)` | `runningCount / max(0.5, cardsRemaining / 52.0)`; the half-deck floor stops the division inflating the count near the cut card (32 cards is 0.6 decks). O(1). |
 | `int CardCounter.suggestedUnits(int cardsRemaining)` | 1 when the true count is below 2, else `floor(trueCount) - 1`. O(1). |
 | `int ConsoleUI.promptInt(String prompt)` | Reads a line as an `int`; re-prompts on `NumberFormatException` until it has one. O(1) per attempt. |
-| `Action ConsoleUI.promptAction(boolean canDouble)` | Accepts `hit`/`h`, `stand`/`s`, and `double`/`d` only if `canDouble`; case-insensitive, trimmed; re-prompts otherwise. O(1) per attempt. |
+| `Action ConsoleUI.promptAction()` | Accepts `hit`/`h` or `stand`/`s`, case-insensitive, trimmed; re-prompts otherwise. O(1) per attempt. |
 | `boolean ConsoleUI.promptYesNo(String prompt)`; `void show(String s)` | Accepts `y`/`yes`/`n`/`no`, re-prompts otherwise; prints one line. O(1) per attempt; O(1). |
-| `void Game.run()` | Deposit; rounds until `isBroke()` or the player says no; print the history. A round: new `Shoe`, `CardHistory` and `CardCounter` if `needsShuffle()`; show the count advice; bet; deal two each; check blackjack; player turn; dealer hits while `total() < 17`; settle; `history.record`. O(r·n) over r rounds, from the per-round history line. |
+| `void Game.run()` | Deposit; rounds until `isBroke()` or the player says no; print the history. A round: new `Shoe`, `CardHistory` and `CardCounter` if `needsShuffle()`; show the count advice; bet; deal two each; check blackjack; player hits until stand or bust; dealer hits while `total() < 17`; settle; `history.record`. O(r·n) over r rounds, from the per-round history line. |
 
-Settlement, with `bet` already subtracted by `placeBet` (doubled after a double down):
+Settlement, with `bet` already subtracted by `placeBet`:
 
 | Outcome | When | `credit` | `netChange` |
 |---|---|---|---|
@@ -104,10 +104,10 @@ Settlement, with `bet` already subtracted by `placeBet` (doubled after a double 
 
 | Bad input (from the scope) | Caught where, what happens, and why there |
 |---|---|
-| Bet of zero or negative; bet larger than the balance | `Bankroll.placeBet` throws `IllegalArgumentException("bet must be greater than zero")` or `("bet exceeds balance of $X")`; `Game.run` catches, shows the message, calls `promptInt` again. Only `Bankroll` knows the balance, and the same method takes the second bet of a double down, so the rule is written once. |
+| Bet of zero or negative; bet larger than the balance | `Bankroll.placeBet` throws `IllegalArgumentException("bet must be greater than zero")` or `("bet exceeds balance of $X")`; `Game.run` catches, shows the message, calls `promptInt` again. Only `Bankroll` knows the balance, so the rule sits next to the number it checks. |
 | Deposit of zero or negative | `Bankroll(int)` throws `IllegalArgumentException("deposit must be greater than zero")`; `Game.run` re-prompts. The balance is private to `Bankroll`. |
 | Non-numeric text where a number is expected | `ConsoleUI.promptInt` catches `NumberFormatException`, prints `"Please enter a whole number."`, loops. The text has not become a number yet, so no other class can see it. |
-| Anything but hit/stand/double, or `double` when not allowed (more than two cards, or balance below the bet) | `ConsoleUI.promptAction` prints `"Type hit, stand"` plus `" or double"` when allowed, and re-prompts; parsing belongs to the UI. `Game.run` computes `canDouble` because only it knows both hand size and balance; if a caller skipped the flag, `placeBet` would still throw. |
+| Anything but hit or stand at the action prompt | `ConsoleUI.promptAction` prints `"Type hit or stand."` and re-prompts; the text is a parsing failure, so it belongs to the UI. |
 | Hitting when no cards remain | `Game.run` checks `needsShuffle()` before every round, so no player can hit into an empty shoe; the round loop owns the moment to reshuffle. `Shoe.deal()` on an empty chain throws `IllegalStateException("shoe is empty")`, left uncaught: reaching it means the cut-card arithmetic is wrong and the program should stop loudly. |
 | Balance reaches zero | `Game.run` checks `isBroke()` after each round, prints `"You are out of money."` and the history, and ends; only `Game` knows a round is over. No mid-game deposit, since the scope says such a player cannot play. |
 | `add(null)`; `remove()` on empty; `remove(T)` of an absent entry | `LinkedChain` throws `NullPointerException`; returns `null`; returns `false` with no change. Null would break `equals` in the search methods. Absence is an ordinary answer; an exception would make every caller walk the chain twice. |
@@ -130,7 +130,7 @@ One normal case and one bad-input case per public method, written as input, then
 
 **`CardCounter`.** `observe`: 5♣, K♥, 8♦, 2♠, 3♠ give a running count of +2, so `trueCount(104)` is 1.0; an ace gives −1, not 0. `trueCount`: running +6 with 104 left is 3.0; running +4 with 10 left is 8.0 by the half-deck floor, not 20.8. `suggestedUnits`: true count 4 gives 3 units; true count −3 gives 1, never 0.
 
-**`ConsoleUI`** (a `Scanner` over a prepared string). `promptInt`: `25` returns 25; `ten`, a blank line, `5.5`, then `25` prints the whole-number message three times and returns 25. `promptAction`: `HIT` with `canDouble` true returns `HIT`; `double`, `split`, ` s ` with `canDouble` false re-prompts twice and returns `STAND`. `promptYesNo`: `y` is true; `maybe` then `no` re-prompts once and is false. `show`: `show("hi")` prints `hi`; `show("")` prints a bare newline.
+**`ConsoleUI`** (a `Scanner` over a prepared string). `promptInt`: `25` returns 25; `ten`, a blank line, `5.5`, then `25` prints the whole-number message three times and returns 25. `promptAction`: `HIT` returns `HIT`; `double`, `split`, then ` s ` re-prompts twice and returns `STAND`. `promptYesNo`: `y` is true; `maybe` then `no` re-prompts once and is false. `show`: `show("hi")` prints `hi`; `show("")` prints a bare newline.
 
 **`Game.run`** (seeded `Random`, scripted input). Deposit 100, bet 10, stand, no: one `RoundResult` is recorded and the final balance equals the value recorded once by hand for seed 42. Deposit `-50` then `100`: the deposit message prints once and play proceeds. Deposit 10, bet 10 on a losing seed: prints `You are out of money.` and the history, with no "play again" prompt.
 
@@ -142,7 +142,7 @@ One normal case and one bad-input case per public method, written as input, then
 | A three-deck shoe of 156 cards, where the scope said both 52 and three decks. | Three decks gives the chain its duplicates and makes counting worth doing. Group discussion. |
 | Card counting is the one stretch goal; ASCII art, splitting, the cheating dealer and multiple players are dropped. | Time for one. Counting adds one class and one line in `draw()`; splitting would change `Hand`, `Bankroll` and settlement; multiple players would change nearly every class. Group discussion. |
 | Counting method is Hi-Lo with a true count and a "true count minus one" bet ramp. | The scope said we had not studied the mathematics. Hi-Lo is balanced (plus and minus cards cancel over a full deck) and needs one integer of state. GenAI, during drafting. |
-| Payouts (1:1, 3:2, push) and double down are MVP. | The scope's first paragraph promised them; the MVP's money rules mean nothing without a payout rule. Own reflection. |
+| Payouts (1:1, 3:2 on blackjack, push) are MVP; double down is dropped. | The money rules in the MVP list mean nothing without a payout rule. Double down is one more branch, one more bad-input case and a second bet path, and we chose basic Blackjack only: bet, hit, stand, blackjack, bust. Group discussion. |
 | A third chain instance, `CardHistory`, holds dealt cards. | The MVP already required tracking every used card; it is a third place where duplicates must be allowed. GenAI, during drafting. |
 | Shuffle in an `ArrayList` before loading the chain; no `shuffle()` on the chain. | Resolves the scope's open question without putting game logic in the chain. GenAI, during drafting. |
 | Cut card at 32; whole-dollar money; session ends at zero balance; `toList()` replaces `toArray()`. | In order: makes "hit with no cards left" unreachable; keeps prompts integer; the scope says a broke player cannot play; removes the only unchecked cast. GenAI, during drafting. |

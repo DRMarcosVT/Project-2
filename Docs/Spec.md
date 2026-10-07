@@ -114,21 +114,21 @@ Settlement, with `bet` already subtracted by `placeBet`:
 
 ## 6. Test plan
 
-One normal case and one bad-input case per public method, written as input, then expected result. "Chain A♠, A♠, K♥" means those three added in that order, so K♥ is the head.
+One normal case and one bad-input case per public method, written as input, then expected result. "Chain `A♠`, `A♠`, `K♥`" means those three added in that order, so `K♥` is the head.
 
-**`LinkedChain`.** `add`: A♠ into empty, `size()` 1 and `contains(A♠)` true; `add(null)`, `NullPointerException` and size still 0. `remove()`: chain A♠, A♠, K♥ returns K♥ with size 2; empty chain returns `null` with size 0. `remove(T)`: `remove(A♠)` on that chain is true and `count(A♠)` becomes 1; `remove(Q♦)`, which is not there, is false and size stays 3. `contains`: `contains(K♥)` true; on an empty chain false. `count`: `count(A♠)` is 2; `count(Q♦)` is 0. `size`: after three adds, 3; after one add and one `remove()`, 0. `toList`: that chain gives a list of 3 starting with K♥; an empty chain gives an empty list, not null.
+**`LinkedChain`.** `add`: `A♠` into empty, `size()` 1 and `contains(A♠)` true; `add(null)`, `NullPointerException` and size still 0. `remove()`: chain `A♠`, `A♠`, `K♥` returns `K♥` with size 2; empty chain returns `null` with size 0. `remove(T)`: `remove(A♠)` on that chain is true and `count(A♠)` becomes 1; `remove(Q♦)`, which is not there, is false and size stays 3. `contains`: `contains(K♥)` true; on an empty chain false. `count`: `count(A♠)` is 2; `count(Q♦)` is 0. `size`: after three adds, 3; after one add and one `remove()`, 0. `toList`: that chain gives a list of 3 starting with `K♥`; an empty chain gives an empty list, not null.
 
 **`Shoe`.** Constructor: `new Shoe(3, new Random(42))` has 156 remaining and each distinct card appears 3 times; `new Shoe(0, rng)` throws `IllegalArgumentException`. `deal`: a fresh shoe returns a `Card` and 155 remain; the 157th call throws `IllegalStateException`. `cardsRemaining` and `needsShuffle`: after 10 deals, 146 and false; after 125 deals, 31 and true (32 is false).
 
-**`Hand`.** `add`: 7♣ into an empty hand, `total()` 7; `add(null)`, `NullPointerException`. `total`: A♠, 9♦ is 20; A♠, 9♦, 5♣ is 15 and an empty hand is 0. `isBust`: 10♠, 9♦, 5♣ true; 10♠, 9♦, 2♣ false. `isBlackjack`: A♠, K♦ true; 7♠, 7♦, 7♣ false (21 with three cards). `toString`: A♠, K♦ contains `21`; an empty hand contains `0` and throws nothing.
+**`Hand`.** `add`: `7♣` into an empty hand, `total()` 7; `add(null)`, `NullPointerException`. `total`: `A♠`, `9♦` is 20; `A♠`, `9♦`, `5♣` is 15 and an empty hand is 0. `isBust`: `10♠`, `9♦`, `5♣` true; `10♠`, `9♦`, `2♣` false. `isBlackjack`: `A♠`, `K♦` true; `7♠`, `7♦`, `7♣` false (21 with three cards). `toString`: `A♠`, `K♦` contains `21`; an empty hand contains `0` and throws nothing.
 
 **`Bankroll`.** Constructor: `new Bankroll(100)` has balance 100; `new Bankroll(0)` throws `IllegalArgumentException`. `placeBet`: from 100, `placeBet(30)` returns 30 and leaves 70; `placeBet(130)` throws with a message naming 100 and the balance is unchanged, as does `placeBet(-1)`. `credit`: from 70, `credit(60)` gives 130; `credit(-10)` throws. `balance` and `isBroke`: balance 1 is not broke; `placeBet(100)` from 100 leaves `isBroke()` true.
 
 **`GameHistory`.** `record` and `all`: one record gives `all()` of size 1; the same `RoundResult` recorded twice gives 2 (duplicates allowed), and an empty history gives an empty list. `wins`, `losses`, `winRate`: WIN, BLACKJACK, LOSS, BUST, PUSH give 2, 2 and 0.4; an empty history gives 0, 0 and 0.0 with no `ArithmeticException`.
 
-**`CardHistory`.** `record` and `all`: K♥ once gives `all()` of size 1; K♥ three times gives 3, and an empty history gives an empty list.
+**`CardHistory`.** `record` and `all`: `K♥` once gives `all()` of size 1; `K♥` three times gives 3, and an empty history gives an empty list.
 
-**`CardCounter`.** `observe`: 5♣, K♥, 8♦, 2♠, 3♠ give a running count of +2, so `trueCount(104)` is 1.0; an ace gives −1, not 0. `trueCount`: running +6 with 104 left is 3.0; running +4 with 10 left is 8.0 by the half-deck floor, not 20.8. `suggestedUnits`: true count 4 gives 3 units; true count −3 gives 1, never 0.
+**`CardCounter`.** `observe`: `5♣`, `K♥`, `8♦`, `2♠`, `3♠` give a running count of +2, so `trueCount(104)` is 1.0; an ace gives −1, not 0. `trueCount`: running +6 with 104 left is 3.0; running +4 with 10 left is 8.0 by the half-deck floor, not 20.8. `suggestedUnits`: true count 4 gives 3 units; true count −3 gives 1, never 0.
 
 **`ConsoleUI`** (a `Scanner` over a prepared string). `promptInt`: `25` returns 25; `ten`, a blank line, `5.5`, then `25` prints the whole-number message three times and returns 25. `promptAction`: `HIT` returns `HIT`; `double`, `split`, then ` s ` re-prompts twice and returns `STAND`. `promptYesNo`: `y` is true; `maybe` then `no` re-prompts once and is false. `show`: `show("hi")` prints `hi`; `show("")` prints a bare newline.
 

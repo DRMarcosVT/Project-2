@@ -62,7 +62,7 @@ Every operation is type-safe. `add`, `contains`, `count` and `remove(T)` take `T
 | `int size()` | Number of entries. O(1): returns the counter. |
 | `List<T> toList()` | New `ArrayList<T>` of every entry, head first; empty list, never null, on an empty chain. O(n): one visit per node. |
 
-**Changes from the LinkedChain we were given** [check against the starter; delete any that already match]: `toArray()` returning `T[]` becomes `toList()` returning `List<T>`, because the array version needs the unchecked cast `(T[]) new Object[n]`; `getCurrentSize()` and `getFrequencyOf()` are renamed `size()` and `count()` to match the assignment; `add` now rejects null so `remove()` returning null is unambiguous.
+**Changes from the LinkedChain we were given.** None; we use the starter `LinkedChain` as given. `Shoe` needs `add`, `remove()` and `size()`, and `GameHistory` and `CardHistory` need `add` and `toArray(T[])`, all of which the starter provides. `add` and `addToEnd` already reject null with `IllegalArgumentException("Cannot add null to chain")`, which is what makes `remove()` returning `null` mean only an empty chain. `toArray(T[])` fills an array the caller creates with its concrete type, e.g. `new RoundResult[rounds.size()]`, so no method needs a cast.
 
 ### Application classes
 

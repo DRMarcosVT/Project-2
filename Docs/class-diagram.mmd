@@ -1,0 +1,76 @@
+classDiagram
+    direction TB
+
+    class Game {
+        Shoe shoe
+        Hand player
+        Hand dealer
+        Bankroll bankroll
+        GameHistory history
+        List~Card~ cardHistory
+        CardCounter counter
+        ConsoleUI ui
+        Round currentRound
+        int round
+    }
+    class ConsoleUI {
+        Scanner in
+    }
+    class Shoe {
+        LinkedChain~Card~ cards
+        Random rng
+    }
+    class Hand {
+        List~Card~ cards
+    }
+    class Bankroll {
+        int balance
+    }
+    class GameHistory {
+        LinkedChain~String~ result
+    }
+    class CardCounter {
+        int recommendedBet
+        LinkedChain~Card~ seen
+    }
+    class Round {
+        int round
+        Outcome outcome
+        int bet
+        int netChange
+    }
+    class LinkedChain~T~ {
+        Node firstNode
+        int numberOfEntries
+    }
+    class Card {
+        <<record>>
+        Rank rank
+        Suit suit
+    }
+    class Rank {
+        <<enumeration>>
+        A, 2-10, J, Q, K
+    }
+    class Suit {
+        <<enumeration>>
+        HEARTS, DIAMONDS, CLUBS, SPADES
+    }
+
+    Game *-- ConsoleUI : ui
+    Game *-- Shoe : shoe
+    Game *-- Hand : player, dealer
+    Game *-- Bankroll : bankroll
+    Game *-- GameHistory : history
+    Game *-- CardCounter : counter
+    Game *-- Round : currentRound
+    Game o-- Card : cardHistory, List of Card
+
+    Shoe *-- LinkedChain : cards, T = Card
+    CardCounter *-- LinkedChain : seen, T = Card
+    GameHistory *-- LinkedChain : result, T = String
+
+    LinkedChain o-- Card : T = Card
+    Hand o-- Card : List of Card
+    Card --> Rank : rank
+    Card --> Suit : suit

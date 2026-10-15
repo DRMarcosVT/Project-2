@@ -253,15 +253,13 @@ Every MVP feature from the scope runs, and all 116 tests pass. What remains:
 - **ASCII card art.** `HandTest.toArtDrawsEachCard` (two cards, two rows of boxes) and `HandTest.toArtOfEmptyHandIsEmpty`; a ten must fit in the box (`CardTest`).
 - **Hit-or-stand advice.** `CardCounterTest.bestActionHitsHard16AgainstTen` (the model's worked example: hit, −0.547 vs −0.580) and `CardCounterTest.bestActionRejectsNullHand`.
 
-### Who does what
 
-Owners come from the four team members (Marcos, Madeline Mehfoud, David Moon, Shreyas). The person who owns a source file owns its test file.
 
 ## Attribution
 
 Every source file was drafted by Marcos from `Docs/Updated Spec.docx`, `Docs/Prototype-Roadmap.md` and `blackjack-expected-return-model.md`. On October 15 David Moon revised `Bankroll`, `ConsoleUI` and `Game` (overflow checks, end-of-input handling, dealer blackjack, auto-stand on 21) and extended the tests. Each file's reviewer reads the file, changes what they disagree with, and is the person who defends it at the grading session.
 
-The test files were drafted by an AI assistant so that every branch of every public method has a test. We have no coverage tool that warns us of an uncovered branch, so the assistant fills that role: it reads each method and writes a case for each path. Marcos reviewed every test and ran the suite.
+The test files were drafted by an AI assistant so that every branch of every public method has a test. We have no coverage tool that warns us of an uncovered branch, so the assistant fills that role: it reads each method and writes a case for each path. Marcos and David Moon reviewed every test and ran the suite.
 
 - `src/LinkedChain.java`: CS 2114 staff; provided, unchanged.
 - `src/Rank.java`: drafted by Marcos; reviewed by [name].
@@ -275,17 +273,17 @@ The test files were drafted by an AI assistant so that every branch of every pub
 - `src/Bankroll.java`: drafted by Marcos; overflow checks added by David Moon; reviewed by [name].
 - `src/GameHistory.java`: drafted by Marcos; reviewed by [name].
 - `src/CardHistory.java`: drafted by Marcos; reviewed by [name].
-- `src/CardCounter.java`: model written by the team; Java drafted by Marcos from it; worked-example numbers checked by running the code; reviewed by [name].
+- `src/CardCounter.java`: model written by Marcos with genAI assistance; Java drafted by Marcos from it; worked-example numbers checked by running the code; reviewed by [name].
 - `src/ConsoleUI.java`: drafted by Marcos; `InputEndedException` added by David Moon; reviewed by [name].
 - `src/Game.java`: drafted by Marcos; end-of-input handling, dealer blackjack and auto-stand added by David Moon; reviewed by [name].
-- `test/CardTest.java`: AI-drafted for branch coverage; extended by David Moon; reviewed by Marcos; run.
-- `test/RoundResultTest.java`: AI-drafted for branch coverage; extended by David Moon; reviewed by Marcos; run.
-- `test/ShoeTest.java`: AI-drafted for branch coverage; reviewed by Marcos; run.
-- `test/HandTest.java`: AI-drafted for branch coverage; extended by David Moon; reviewed by Marcos; run.
-- `test/BankrollTest.java`: AI-drafted for branch coverage; extended by David Moon; reviewed by Marcos; run.
-- `test/GameHistoryTest.java`: AI-drafted for branch coverage; reviewed by Marcos; run.
-- `test/CardHistoryTest.java`: AI-drafted for branch coverage; reviewed by Marcos; run.
-- `test/CardCounterTest.java`: AI-drafted for branch coverage; extended by David Moon; reviewed by Marcos; run.
-- `test/ConsoleUITest.java`: AI-drafted for branch coverage; extended by David Moon; reviewed by Marcos; run.
-- `test/GameTest.java`: AI-drafted for branch coverage, seeds 1 and 2 chosen by running the game; extended by David Moon; reviewed by Marcos; run.
+- `test/CardTest.java`: AI-drafted for branch coverage; extended by David Moon; reviewed by Marcos and David Moon; run.
+- `test/RoundResultTest.java`: AI-drafted for branch coverage; extended by David Moon; reviewed by Marcos and David Moon; run.
+- `test/ShoeTest.java`: AI-drafted for branch coverage; reviewed by Marcos and David Moon; run.
+- `test/HandTest.java`: AI-drafted for branch coverage; extended by David Moon; reviewed by Marcos and David Moon; run.
+- `test/BankrollTest.java`: AI-drafted for branch coverage; extended by David Moon; reviewed by Marcos and David Moon; run.
+- `test/GameHistoryTest.java`: AI-drafted for branch coverage; reviewed by Marcos and David Moon; run.
+- `test/CardHistoryTest.java`: AI-drafted for branch coverage; reviewed by Marcos and David Moon; run.
+- `test/CardCounterTest.java`: AI-drafted for branch coverage; extended by David Moon; reviewed by Marcos and David Moon; run.
+- `test/ConsoleUITest.java`: AI-drafted for branch coverage; extended by David Moon; reviewed by Marcos and David Moon; run.
+- `test/GameTest.java`: AI-drafted for branch coverage, seeds 1 and 2 chosen by running the game; extended by David Moon; reviewed by Marcos and David Moon; run.
 - `test/LinkedChainTest.java`: written by David Moon; reviewed by Marcos; run.

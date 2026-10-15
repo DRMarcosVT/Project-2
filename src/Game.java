@@ -71,9 +71,26 @@ public class Game
 
     /**
      * Plays the whole session: deposit, then rounds until the player says
-     * no or runs out of money, then the history.
+     * no or runs out of money, then the history. EOF ends cleanly; an
+     * unfinished round is cancelled and its bet returned.
      */
     public void run()
+    {
+        try
+        {
+            runSession();
+        }
+        catch (ConsoleUI.InputEndedException e)
+        {
+            ui.show("Input ended; goodbye.");
+            if (bankroll != null && cardHistory != null)
+            {
+                showHistory();
+            }
+        }
+    }
+
+    private void runSession()
     {
         ui.show("Welcome to Blackjack. Dealer stands on 17; blackjack pays 3 to 2.");
         bankroll = promptDeposit();
@@ -150,7 +167,8 @@ public class Game
      * @return the dollars to credit: 0 for a loss or bust, the bet for a
      *         push, twice the bet for a win, bet + bet * 3 / 2 for blackjack
      * @throws NullPointerException     if outcome is null
-     * @throws IllegalArgumentException if bet is zero or negative
+     * @throws IllegalArgumentException if bet is zero or negative, or the
+     *         payout exceeds int range
      */
     public static int winnings(Outcome outcome, int bet)
     {
@@ -163,14 +181,23 @@ public class Game
         switch (outcome)
         {
             case BLACKJACK:
-                return bet + bet * 3 / 2;
+                return checkedPayout(bet + bet * 3L / 2);
             case WIN:
-                return 2 * bet;
+                return checkedPayout(2L * bet);
             case PUSH:
                 return bet;
             default:
                 return 0;
         }
+    }
+
+    private static int checkedPayout(long amount)
+    {
+        if (amount > Integer.MAX_VALUE)
+        {
+            throw new IllegalArgumentException("Payout exceeds whole-dollar integer limit");
+        }
+        return (int) amount;
     }
 
     /**
@@ -267,12 +294,25 @@ public class Game
         {
             ui.show("Blackjack!");
         }
+        else if (dealer.isBlackjack())
+        {
+            ui.show("Dealer has blackjack.");
+        }
         else
         {
-            while (!player.isBust() && ui.promptAction() == Action.HIT)
+            try
             {
-                draw(player);
-                ui.show("Your hand: " + player);
+                while (player.total() < 21 && ui.promptAction() == Action.HIT)
+                {
+                    draw(player);
+                    ui.show("Your hand: " + player);
+                }
+            }
+            catch (ConsoleUI.InputEndedException e)
+            {
+                bankroll.credit(bet);
+                ui.show("Unfinished round cancelled; bet returned.");
+                throw e;
             }
             if (player.isBust())
             {

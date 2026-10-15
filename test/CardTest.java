@@ -86,4 +86,20 @@ public class CardTest
     {
         assertEquals("10H", new Card(Rank.TEN, Suit.HEARTS).toString());
     }
+
+    @Test
+    public void recordAccessorsAndEqualityCoverOtherValuesAndNull()
+    {
+        Card card = new Card(Rank.TWO, Suit.CLUBS);
+        Card same = new Card(Rank.TWO, Suit.CLUBS);
+        assertEquals(Rank.TWO, card.rank());
+        assertEquals(Suit.CLUBS, card.suit());
+        assertEquals(card.hashCode(), same.hashCode());
+        org.junit.jupiter.api.Assertions.assertNotEquals(card, null);
+        org.junit.jupiter.api.Assertions.assertNotEquals(card, new Card(Rank.THREE, Suit.CLUBS));
+        org.junit.jupiter.api.Assertions.assertNotEquals(card, new Card(Rank.TWO, Suit.HEARTS));
+        assertEquals(2, Rank.TWO.value());
+        assertEquals("2", Rank.TWO.label());
+    }
+
 }

@@ -142,4 +142,30 @@ public class CardCounterTest
         assertThrows(IllegalArgumentException.class, () -> rich.suggestedBet(0));
         assertEquals(1, rich.suggestedBet(1));
     }
+    /** D2: repeated advice is stable, and a rejected observation changes nothing. */
+    @Test
+    public void repeatedAdviceAndRejectedObservationPreserveModel()
+    {
+        CardCounter counter = tenRichDeck();
+        double edge = counter.expectedReturn();
+        double variance = counter.variance();
+        int bet = counter.suggestedBet(1000);
+        assertEquals(bet, counter.suggestedBet(1000));
+        assertThrows(NullPointerException.class, () -> counter.observe(null));
+        assertEquals(edge, counter.expectedReturn());
+        assertEquals(variance, counter.variance());
+        assertEquals(bet, counter.suggestedBet(1000));
+    }
+
+    /** Advice validates bankroll and refuses a shoe below the cut-card boundary. */
+    @Test
+    public void suggestedBetRejectsNegativeBankrollAndTooFewCards()
+    {
+        CardCounter counter = tenRichDeck();
+        assertThrows(IllegalArgumentException.class, () -> counter.suggestedBet(-1));
+        assertTrue(counter.suggestedBet(100) >= CardCounter.MINIMUM_BET);
+        counter.observe(new Card(Rank.SEVEN, Suit.CLUBS));
+        assertThrows(IllegalStateException.class, () -> counter.suggestedBet(100));
+    }
+
 }

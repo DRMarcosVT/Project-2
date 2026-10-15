@@ -141,4 +141,28 @@ public class ConsoleUITest
         ConsoleUI ui = uiReading("");
         assertThrows(IllegalStateException.class, () -> ui.promptInt("Bet: "));
     }
+
+    @Test
+    public void allPromptsReportEndOfInput()
+    {
+        assertThrows(IllegalStateException.class, () -> uiReading("").promptAction());
+        assertThrows(IllegalStateException.class, () -> uiReading("").promptYesNo("Again? "));
+    }
+
+    @Test
+    public void promptIntRejectsIntegerOverflow()
+    {
+        assertEquals(1, uiReading("2147483648\n1\n").promptInt("Bet: "));
+        assertEquals(1, timesPrinted("Please enter a whole number."));
+    }
+
+    @Test
+    public void nullTextUsesPrintStreamConvention()
+    {
+        uiReading("").show(null);
+        assertEquals("null" + System.lineSeparator(), printed.toString());
+        assertEquals(2, uiReading("2\n").promptInt(null));
+        assertFalse(uiReading("n\n").promptYesNo(null));
+    }
+
 }

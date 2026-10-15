@@ -260,14 +260,14 @@ Every source file was drafted by Marcos from `Docs/Updated Spec.docx`, `Docs/Pro
 The test files were drafted by an AI assistant so that every branch of every public method has a test. We have no coverage tool that warns us of an uncovered branch, so the assistant fills that role: it reads each method and writes a case for each path. Marcos and David Moon reviewed every test and ran the suite.
 
 - `src/LinkedChain.java`: CS 2114 staff; provided, unchanged.
-- `src/Rank.java`: drafted by Marcos; reviewed by [name].
-- `src/Suit.java`: drafted by Marcos; reviewed by [name].
-- `src/Card.java`: drafted by Marcos; reviewed by [name].
+- `src/Rank.java`: drafted by Marcos; reviewed by Madeline Mehfoud.
+- `src/Suit.java`: drafted by Marcos; reviewed by Madeline Mehfoud.
+- `src/Card.java`: drafted by Marcos; reviewed by Madeline Mehfoud.
 - `src/Outcome.java`: drafted by Marcos; reviewed by [name].
 - `src/Action.java`: drafted by Marcos; reviewed by [name].
 - `src/RoundResult.java`: drafted by Marcos; reviewed by [name].
-- `src/Shoe.java`: drafted by Marcos; reviewed by [name].
-- `src/Hand.java`: drafted by Marcos; reviewed by [name].
+- `src/Shoe.java`: drafted by Marcos; reviewed by Madeline Mehfoud.
+- `src/Hand.java`: drafted by Marcos; reviewed by Madeline Mehfoud.
 - `src/Bankroll.java`: drafted by Marcos; overflow checks added by David Moon; reviewed by [name].
 - `src/GameHistory.java`: drafted by Marcos; reviewed by [name].
 - `src/CardHistory.java`: drafted by Marcos; reviewed by [name].

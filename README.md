@@ -272,7 +272,7 @@ The test files were drafted by an AI assistant so that every branch of every pub
 - `src/GameHistory.java`: drafted by Marcos; reviewed by [name].
 - `src/CardHistory.java`: drafted by Marcos; reviewed by [name].
 - `src/CardCounter.java`: model written by Marcos with genAI assistance; Java drafted by Marcos from it; worked-example numbers checked by running the code; reviewed by [name].
-- `src/ConsoleUI.java`: drafted by Marcos; `InputEndedException` added by David Moon; reviewed by [name].
+- `src/ConsoleUI.java`: drafted by Marcos; `InputEndedException` added by David Moon; reviewed by David Moon.
 - `src/Game.java`: drafted by Marcos; end-of-input handling, dealer blackjack and auto-stand added by David Moon; reviewed by [name].
 - `test/CardTest.java`: AI-drafted for branch coverage; extended and reviewed by David Moon; reviewed by Marcos; run.
 - `test/RoundResultTest.java`: AI-drafted for branch coverage; extended and reviewed by David Moon; reviewed by Marcos; run.

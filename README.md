@@ -236,7 +236,6 @@ Every MVP feature from the scope runs, and all 116 tests pass. What remains:
 
 1. Each teammate reads the files they own and fixes anything they disagree with. Owner: everyone.
 2. Keep an `int[] seenCounts` next to the chain in `CardCounter` so `observe` is O(1) as the spec estimated. Owner: [name].
-3. Add a package-private `kellyFraction(double[] chances)` to `CardCounter` that bisects f in (0, 1) on Σ P(W=w)·w/(1 + fw) = 0, and have `suggestedBet` call it when the edge is above 5%. Below that the result equals E/σ² to the dollar, so the fresh-deck worked example is unchanged. Owner: [name].
 
 ### Stretch goals from the scope
 
@@ -250,7 +249,6 @@ Every MVP feature from the scope runs, and all 116 tests pass. What remains:
 ### New tests the added work needs
 
 - **O(1) `observe` (item 2).** No new behaviour; the existing `CardCounterTest.observe*` and `repeatedAdviceAndRejectedObservationPreserveModel` tests must still pass.
-- **Exact Kelly (item 3).** `CardCounterTest.kellyFractionMatchesExactFormForLargeEdge`: chances of 0.8 for +1 and 0.2 for −1 must give 0.60, where E/σ² gives 0.94. `CardCounterTest.kellyFractionMatchesApproximationForSmallEdge`: the fresh-deck chances from the worked example must give the same whole-dollar bet as before. `CardCounterTest.kellyFractionRejectsChancesThatDoNotSumToOne` for the bad input.
 - **ASCII card art.** `HandTest.toArtDrawsEachCard` (two cards, two rows of boxes) and `HandTest.toArtOfEmptyHandIsEmpty`; a ten must fit in the box (`CardTest`).
 
 ## Attribution

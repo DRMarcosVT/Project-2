@@ -1,4 +1,5 @@
 import java.io.PrintStream;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Scanner;
 
@@ -73,7 +74,7 @@ public class ConsoleUI
     {
         while (true)
         {
-            String line = readLine("Hit or stand? ").trim().toLowerCase();
+            String line = readLine("Hit or stand? ").trim().toLowerCase(Locale.ROOT);
             if (line.equals("hit") || line.equals("h"))
             {
                 return Action.HIT;
@@ -99,7 +100,7 @@ public class ConsoleUI
     {
         while (true)
         {
-            String line = readLine(prompt).trim().toLowerCase();
+            String line = readLine(prompt).trim().toLowerCase(Locale.ROOT);
             if (line.equals("y") || line.equals("yes"))
             {
                 return true;

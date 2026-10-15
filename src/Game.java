@@ -288,6 +288,7 @@ public class Game
         draw(player);
         draw(dealer);
         ui.show("Your hand: " + player);
+        ui.show(player.toArt());
         ui.show("Dealer shows: " + dealerUp);
 
         if (player.isBlackjack())
@@ -306,6 +307,7 @@ public class Game
                 {
                     draw(player);
                     ui.show("Your hand: " + player);
+                    ui.show(player.toArt());
                 }
             }
             catch (ConsoleUI.InputEndedException e)
@@ -327,6 +329,7 @@ public class Game
             }
         }
         ui.show("Dealer's hand: " + dealer);
+        ui.show(dealer.toArt());
 
         Outcome outcome = settle(player, dealer);
         int paidBack = winnings(outcome, bet);
@@ -358,9 +361,9 @@ public class Game
     {
         ui.show("");
         ui.show("Rounds played (most recent first):");
-        for (RoundResult result : history.all())
+        for (String summary : history.summaries())
         {
-            ui.show("  " + result);
+            ui.show("  " + summary);
         }
         ui.show(String.format("Wins: %d  Losses: %d  Win rate: %.0f%%",
             history.wins(), history.losses(), history.winRate() * 100));

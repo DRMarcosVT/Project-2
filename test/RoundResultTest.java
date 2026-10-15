@@ -51,6 +51,13 @@ public class RoundResultTest
     }
 
     @Test
+    public void toStringHandlesMinimumIntegerNetChange()
+    {
+        RoundResult result = new RoundResult(1, Outcome.LOSS, 1, Integer.MIN_VALUE);
+        assertEquals("Round 1: LOSS, bet $1, net -$2147483648", result.toString());
+    }
+
+    @Test
     public void recordAccessorsAndEqualityCoverLossAndNull()
     {
         RoundResult loss = new RoundResult(1, Outcome.LOSS, 1, -1);

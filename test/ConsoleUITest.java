@@ -97,6 +97,23 @@ public class ConsoleUITest
         assertEquals(2, timesPrinted("Type hit or stand."));
     }
 
+    /** English commands keep their meaning under a Turkish system locale. */
+    @Test
+    public void promptsIgnoreSystemLocale()
+    {
+        java.util.Locale original = java.util.Locale.getDefault();
+        try
+        {
+            java.util.Locale.setDefault(java.util.Locale.forLanguageTag("tr-TR"));
+            assertEquals(Action.HIT, uiReading("HIT\n").promptAction());
+            assertTrue(uiReading("YES\n").promptYesNo("Again? "));
+        }
+        finally
+        {
+            java.util.Locale.setDefault(original);
+        }
+    }
+
     // ---- promptYesNo() ----
 
     /** Normal: y is yes. */

@@ -75,6 +75,26 @@ public class Hand
     }
 
     /**
+     * Draws the cards as ASCII boxes in dealt order.
+     *
+     * @return three lines of card art, or an empty string for no cards; O(k)
+     */
+    public String toArt()
+    {
+        if (cards.isEmpty())
+        {
+            return "";
+        }
+        String border = "+----+ ".repeat(cards.size()).stripTrailing();
+        StringBuilder faces = new StringBuilder();
+        for (Card card : cards)
+        {
+            faces.append(String.format("|%-4s| ", card));
+        }
+        return border + "\n" + faces.toString().stripTrailing() + "\n" + border;
+    }
+
+    /**
      * Prints the cards and the total, e.g. "AS KD (21)". An empty hand
      * prints "(0)".
      *

@@ -118,6 +118,19 @@ public class HandTest
     }
 
     @Test
+    public void toArtDrawsCardsInOrderIncludingTen()
+    {
+        assertEquals("+----+ +----+\n|AS  | |10S |\n+----+ +----+",
+            handOf(ACE_S, TEN_S).toArt());
+    }
+
+    @Test
+    public void toArtOfEmptyHandIsEmpty()
+    {
+        assertEquals("", new Hand().toArt());
+    }
+
+    @Test
     public void multipleAcesDemoteIndividually()
     {
         Hand hand = handOf(ACE_S, ACE_S, NINE_D);

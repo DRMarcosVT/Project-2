@@ -96,6 +96,7 @@ public class GameTest
         assertTrue(out.contains("Round 1: WIN, bet $10, net +$10"), out);
         assertTrue(out.contains("Wins: 1  Losses: 0  Win rate: 100%"), out);
         assertTrue(out.contains("Final balance: $110"), out);
+        assertTrue(out.contains("+----+ +----+\n|"), out);
     }
 
     /** Bad input: a negative deposit and an oversized bet are re-asked once each. */

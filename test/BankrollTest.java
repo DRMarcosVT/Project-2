@@ -118,4 +118,25 @@ public class BankrollTest
         bankroll.credit(0);
         assertTrue(bankroll.isBroke());
     }
+
+    @Test
+    public void creditRejectsOverflowWithoutChangingBalance()
+    {
+        Bankroll money = new Bankroll(Integer.MAX_VALUE);
+        assertThrows(IllegalArgumentException.class, () -> money.credit(1));
+        assertEquals(Integer.MAX_VALUE, money.balance());
+    }
+
+    @Test
+    public void placeBetRejectsUnrepresentablePayoutBeforeDeduction()
+    {
+        Bankroll money = new Bankroll(Integer.MAX_VALUE);
+        assertThrows(IllegalArgumentException.class, () -> money.placeBet(Integer.MAX_VALUE));
+        assertEquals(Integer.MAX_VALUE, money.balance());
+        Bankroll nearLimit = new Bankroll(Integer.MAX_VALUE - 1);
+        assertEquals(1, nearLimit.placeBet(1));
+        nearLimit.credit(Game.winnings(Outcome.BLACKJACK, 1));
+        assertEquals(Integer.MAX_VALUE, nearLimit.balance());
+    }
+
 }

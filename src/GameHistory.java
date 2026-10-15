@@ -16,6 +16,7 @@ import java.util.Objects;
 public class GameHistory
 {
     private final LinkedChain<RoundResult> rounds = new LinkedChain<>();
+    private final LinkedChain<String> summaries = new LinkedChain<>();
 
     /**
      * Stores one finished round. LinkedChain.add() puts it at the head, so
@@ -27,6 +28,7 @@ public class GameHistory
     public void record(RoundResult result)
     {
         rounds.add(Objects.requireNonNull(result, "result must not be null"));
+        summaries.add(result.toString());
     }
 
     /**
@@ -39,6 +41,16 @@ public class GameHistory
     {
         RoundResult[] array = new RoundResult[rounds.size()];
         return Arrays.asList(rounds.toArray(array));
+    }
+
+    /**
+     * Gets display summaries, newest first, as a separate snapshot.
+     *
+     * @return the recorded summary strings, or an empty list; O(n)
+     */
+    public List<String> summaries()
+    {
+        return Arrays.asList(summaries.toArray(new String[summaries.size()]));
     }
 
     /**

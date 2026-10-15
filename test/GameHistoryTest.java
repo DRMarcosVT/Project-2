@@ -76,6 +76,34 @@ public class GameHistoryTest
         assertTrue(history.all().isEmpty());
     }
 
+    @Test
+    public void summariesStoreStringsNewestFirstWithDuplicates()
+    {
+        GameHistory history = new GameHistory();
+        history.record(WIN);
+        history.record(LOSS);
+        history.record(LOSS);
+        assertEquals(java.util.List.of(LOSS.toString(), LOSS.toString(), WIN.toString()),
+            history.summaries());
+        assertEquals(LOSS, history.all().get(0));
+        java.util.List<String> snapshot = history.summaries();
+        snapshot.set(0, "changed outside history");
+        assertEquals(LOSS.toString(), history.summaries().get(0));
+    }
+
+    @Test
+    public void summariesOfEmptyHistoryStayEmptyAfterRejectedNull()
+    {
+        GameHistory history = new GameHistory();
+        assertTrue(history.summaries().isEmpty());
+        assertThrows(NullPointerException.class, () -> history.record(null));
+        assertTrue(history.summaries().isEmpty());
+        history.record(WIN);
+        assertThrows(NullPointerException.class, () -> history.record(null));
+        assertEquals(java.util.List.of(WIN.toString()), history.summaries());
+        assertEquals(java.util.List.of(WIN), history.all());
+    }
+
     // ---- wins() ----
 
     /** Normal: WIN and BLACKJACK both count as wins. */

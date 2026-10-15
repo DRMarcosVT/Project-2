@@ -1,4 +1,5 @@
 import java.io.PrintStream;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Scanner;
 
@@ -73,7 +74,7 @@ public class ConsoleUI
     {
         while (true)
         {
-            String line = readLine("Hit or stand? ").trim().toLowerCase();
+            String line = readLine("Hit or stand? ").trim().toLowerCase(Locale.ROOT);
             if (line.equals("hit") || line.equals("h"))
             {
                 return Action.HIT;
@@ -99,7 +100,7 @@ public class ConsoleUI
     {
         while (true)
         {
-            String line = readLine(prompt).trim().toLowerCase();
+            String line = readLine(prompt).trim().toLowerCase(Locale.ROOT);
             if (line.equals("y") || line.equals("yes"))
             {
                 return true;
@@ -122,6 +123,17 @@ public class ConsoleUI
         out.println(message);
     }
 
+    /** Distinguishes EOF from a game-state error; preserves the public exception contract. */
+    static class InputEndedException extends IllegalStateException
+    {
+        private static final long serialVersionUID = 1L;
+
+        InputEndedException()
+        {
+            super("Input ended before the game finished");
+        }
+    }
+
     /**
      * Prints a prompt and reads the next typed line.
      *
@@ -135,8 +147,7 @@ public class ConsoleUI
         out.flush();
         if (!in.hasNextLine())
         {
-            throw new IllegalStateException(
-                "Input ended before the game finished");
+            throw new InputEndedException();
         }
         return in.nextLine();
     }

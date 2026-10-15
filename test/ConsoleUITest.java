@@ -97,6 +97,23 @@ public class ConsoleUITest
         assertEquals(2, timesPrinted("Type hit or stand."));
     }
 
+    /** English commands keep their meaning under a Turkish system locale. */
+    @Test
+    public void promptsIgnoreSystemLocale()
+    {
+        java.util.Locale original = java.util.Locale.getDefault();
+        try
+        {
+            java.util.Locale.setDefault(java.util.Locale.forLanguageTag("tr-TR"));
+            assertEquals(Action.HIT, uiReading("HIT\n").promptAction());
+            assertTrue(uiReading("YES\n").promptYesNo("Again? "));
+        }
+        finally
+        {
+            java.util.Locale.setDefault(original);
+        }
+    }
+
     // ---- promptYesNo() ----
 
     /** Normal: y is yes. */
@@ -141,4 +158,28 @@ public class ConsoleUITest
         ConsoleUI ui = uiReading("");
         assertThrows(IllegalStateException.class, () -> ui.promptInt("Bet: "));
     }
+
+    @Test
+    public void allPromptsReportEndOfInput()
+    {
+        assertThrows(IllegalStateException.class, () -> uiReading("").promptAction());
+        assertThrows(IllegalStateException.class, () -> uiReading("").promptYesNo("Again? "));
+    }
+
+    @Test
+    public void promptIntRejectsIntegerOverflow()
+    {
+        assertEquals(1, uiReading("2147483648\n1\n").promptInt("Bet: "));
+        assertEquals(1, timesPrinted("Please enter a whole number."));
+    }
+
+    @Test
+    public void nullTextUsesPrintStreamConvention()
+    {
+        uiReading("").show(null);
+        assertEquals("null" + System.lineSeparator(), printed.toString());
+        assertEquals(2, uiReading("2\n").promptInt(null));
+        assertFalse(uiReading("n\n").promptYesNo(null));
+    }
+
 }

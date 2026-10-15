@@ -96,6 +96,7 @@ public class GameTest
         assertTrue(out.contains("Round 1: WIN, bet $10, net +$10"), out);
         assertTrue(out.contains("Wins: 1  Losses: 0  Win rate: 100%"), out);
         assertTrue(out.contains("Final balance: $110"), out);
+        assertTrue(out.contains("+----+ +----+\n|"), out);
     }
 
     /** Bad input: a negative deposit and an oversized bet are re-asked once each. */
@@ -207,5 +208,136 @@ public class GameTest
         String out = runMain("abc\n100\n10\ns\nn\n");
         assertTrue(out.contains("Please enter a whole number."), out);
         assertTrue(out.contains("Thanks for playing."), out);
+    }
+
+    @Test
+    public void winningsRejectsNegativeAndOverflowingBets()
+    {
+        assertThrows(IllegalArgumentException.class, () -> Game.winnings(Outcome.WIN, -1));
+        assertThrows(IllegalArgumentException.class,
+            () -> Game.winnings(Outcome.BLACKJACK, Integer.MAX_VALUE));
+        assertThrows(IllegalArgumentException.class,
+            () -> Game.winnings(Outcome.WIN, Integer.MAX_VALUE));
+        assertEquals(1250000000, Game.winnings(Outcome.BLACKJACK, 500000000));
+    }
+
+    @Test
+    public void mainExitsCleanlyWhenInputEnds()
+    {
+        assertTrue(runMain("").contains("Input ended; goodbye."));
+        assertTrue(runMain("100\n").contains("Final balance: $100"));
+    }
+
+    @Test
+    public void runRefundsUnfinishedRoundOnInputEnd()
+    {
+        String out = play(1, "100\n10\n");
+        assertTrue(out.contains("Unfinished round cancelled; bet returned."), out);
+        assertTrue(out.contains("Final balance: $100"), out);
+        assertFalse(out.contains("Round 1: WIN"), out);
+    }
+
+    @Test
+    public void runRepromptsZeroAndNegativeBets()
+    {
+        String out = play(1, "100\n0\n-1\n10\ns\nn\n");
+        assertEquals(2, timesIn(out, "Bet must be greater than zero"), out);
+        assertTrue(out.contains("Final balance: $110"), out);
+    }
+
+
+    @Test
+    public void runHitsToTwentyOneAndAutomaticallyStands()
+    {
+        // Seed 0: 7C + 10C + 4H = 21; dealer 9D + 4S + 9S busts.
+        String out = play(0, "100\n10\nh\nn\n");
+        assertTrue(out.contains("Your hand: 7C 10C 4H (21)"), out);
+        assertEquals(1, timesIn(out, "Hit or stand?"), out);
+        assertTrue(out.contains("Round 1: WIN"), out);
+        assertTrue(out.contains("Final balance: $110"), out);
+    }
+
+    @Test
+    public void runHitBustForfeitsBetWithoutDealerDraw()
+    {
+        String out = play(3, "100\n10\nh\nn\n");
+        assertTrue(out.contains("Your hand: 7H QS 10S (27)"), out);
+        assertTrue(out.contains("Dealer's hand: 6C 9H (15)"), out);
+        assertTrue(out.contains("Round 1: BUST"), out);
+        assertTrue(out.contains("Final balance: $90"), out);
+    }
+
+    @Test
+    public void runSettlesDealerBlackjackWithoutActionPrompt()
+    {
+        String out = play(20, "100\n10\nn\n");
+        assertFalse(out.contains("Hit or stand?"), out);
+        assertTrue(out.contains("Round 1: LOSS"), out);
+        assertTrue(out.contains("Final balance: $90"), out);
+    }
+
+    @Test
+    public void runPaysOddBlackjackAndPushesBothNaturals()
+    {
+        String win = play(16, "100\n5\nn\n");
+        assertTrue(win.contains("Round 1: BLACKJACK, bet $5, net +$7"), win);
+        assertTrue(win.contains("Final balance: $107"), win);
+        String push = play(48, "100\n10\nn\n");
+        assertTrue(push.contains("Round 1: PUSH"), push);
+        assertTrue(push.contains("Final balance: $100"), push);
+    }
+
+    @Test
+    public void runDealerStandsOnSoftSeventeen()
+    {
+        String out = play(40, "100\n10\ns\nn\n");
+        assertTrue(out.contains("Dealer's hand: 6D AS (17)"), out);
+        assertTrue(out.contains("Round 1: LOSS"), out);
+    }
+
+    @Test
+    public void runReshufflesAndResetsCardTrackersButKeepsRoundHistory()
+    {
+        ByteArrayOutputStream printed = new ByteArrayOutputStream();
+        ConsoleUI ui = new ConsoleUI(new Scanner(""), new PrintStream(printed, true))
+        {
+            private int numberPrompts;
+            private int rounds;
+
+            @Override
+            public int promptInt(String prompt)
+            {
+                return numberPrompts++ == 0 ? 1000 : 1;
+            }
+
+            @Override
+            public Action promptAction()
+            {
+                return Action.STAND;
+            }
+
+            @Override
+            public boolean promptYesNo(String prompt)
+            {
+                return ++rounds < 30;
+            }
+        };
+        new Game(ui, new Random(1)).run();
+        String out = printed.toString();
+        assertTrue(out.contains("Fewer than 32 cards left: shuffling a new shoe."), out);
+        assertTrue(timesIn(out, "Cards seen this shoe: 0, unseen: 156.") >= 2, out);
+        assertTrue(out.contains("Cards seen this shoe: 5, unseen: 151."), out);
+        String history = out.substring(out.indexOf("Rounds played (most recent first):"));
+        assertEquals(30, timesIn(history, "  Round "), history);
+        assertTrue(history.contains("  Round 1: WIN"), history);
+        assertTrue(history.contains("  Round 30:"), history);
+    }
+
+    @Test
+    public void runRejectsBetThatCouldOverflowAndAllowsRetry()
+    {
+        String out = play(1, "2147483646\n2147483646\n1\ns\nn\n");
+        assertTrue(out.contains("Bet could exceed whole-dollar integer limit"), out);
+        assertTrue(out.contains("Final balance: $2147483647"), out);
     }
 }

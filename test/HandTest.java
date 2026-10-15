@@ -116,4 +116,32 @@ public class HandTest
     {
         assertEquals("(0)", new Hand().toString());
     }
+
+    @Test
+    public void toArtDrawsCardsInOrderIncludingTen()
+    {
+        assertEquals("+----+ +----+\n|AS  | |10S |\n+----+ +----+",
+            handOf(ACE_S, TEN_S).toArt());
+    }
+
+    @Test
+    public void toArtOfEmptyHandIsEmpty()
+    {
+        assertEquals("", new Hand().toArt());
+    }
+
+    @Test
+    public void multipleAcesDemoteIndividually()
+    {
+        Hand hand = handOf(ACE_S, ACE_S, NINE_D);
+        assertEquals(21, hand.total());
+        assertFalse(hand.isBlackjack());
+        hand.add(KING_D);
+        assertEquals(21, hand.total());
+        hand.add(TWO_C);
+        assertTrue(hand.isBust());
+        assertFalse(new Hand().isBust());
+        assertFalse(new Hand().isBlackjack());
+    }
+
 }

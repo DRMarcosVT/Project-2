@@ -49,4 +49,26 @@ public class RoundResultTest
         RoundResult result = new RoundResult(4, Outcome.BUST, 10, -10);
         assertEquals("Round 4: BUST, bet $10, net -$10", result.toString());
     }
+
+    @Test
+    public void toStringHandlesMinimumIntegerNetChange()
+    {
+        RoundResult result = new RoundResult(1, Outcome.LOSS, 1, Integer.MIN_VALUE);
+        assertEquals("Round 1: LOSS, bet $1, net -$2147483648", result.toString());
+    }
+
+    @Test
+    public void recordAccessorsAndEqualityCoverLossAndNull()
+    {
+        RoundResult loss = new RoundResult(1, Outcome.LOSS, 1, -1);
+        assertEquals(1, loss.round());
+        assertEquals(Outcome.LOSS, loss.outcome());
+        assertEquals(1, loss.bet());
+        assertEquals(-1, loss.netChange());
+        assertEquals(loss, new RoundResult(1, Outcome.LOSS, 1, -1));
+        assertEquals(loss.hashCode(), new RoundResult(1, Outcome.LOSS, 1, -1).hashCode());
+        org.junit.jupiter.api.Assertions.assertNotEquals(loss, null);
+        org.junit.jupiter.api.Assertions.assertNotEquals(loss, new RoundResult(2, Outcome.PUSH, 1, 0));
+    }
+
 }

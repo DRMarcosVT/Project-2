@@ -35,6 +35,6 @@ public record RoundResult(int round, Outcome outcome, int bet, int netChange)
     {
         String sign = netChange < 0 ? "-$" : "+$";
         return "Round " + round + ": " + outcome + ", bet $" + bet
-            + ", net " + sign + Math.abs(netChange);
+            + ", net " + sign + Math.abs((long) netChange);
     }
 }

@@ -35,7 +35,8 @@ public class Bankroll
      * @param amount the bet in whole dollars
      * @return the amount bet, so the caller can keep it for settlement
      * @throws IllegalArgumentException if amount is zero or negative, or
-     *         larger than the balance; the balance is unchanged
+     *         larger than the balance, or a possible payout exceeds int range;
+     *         the balance is unchanged
      */
     public int placeBet(int amount)
     {
@@ -49,6 +50,13 @@ public class Bankroll
             throw new IllegalArgumentException(
                 "Bet of $" + amount + " exceeds balance of $" + balance);
         }
+        // Reject before deducting: even a blackjack must fit both int APIs.
+        long payout = amount + amount * 3L / 2;
+        if (payout > Integer.MAX_VALUE
+            || balance - (long) amount + payout > Integer.MAX_VALUE)
+        {
+            throw new IllegalArgumentException("Bet could exceed whole-dollar integer limit");
+        }
         balance -= amount;
         return amount;
     }
@@ -57,7 +65,8 @@ public class Bankroll
      * Pays money back into the balance after a round.
      *
      * @param amount the payout in whole dollars; 0 is allowed for a loss
-     * @throws IllegalArgumentException if amount is negative
+     * @throws IllegalArgumentException if amount is negative or the
+     *         balance would overflow
      */
     public void credit(int amount)
     {
@@ -65,6 +74,10 @@ public class Bankroll
         {
             throw new IllegalArgumentException(
                 "Credit must not be negative, got " + amount);
+        }
+        if ((long) balance + amount > Integer.MAX_VALUE)
+        {
+            throw new IllegalArgumentException("Credit exceeds whole-dollar integer limit");
         }
         balance += amount;
     }

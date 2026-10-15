@@ -1,193 +1,245 @@
 # Blackjack on a LinkedChain
 
-CS 2114 Project 2, Deliverable 3: the prototype and its tests.
+Virginia Tech CS 2114 Project 2, Deliverable 3 — Prototype + Tests.
 
-A console Blackjack game. The player deposits money, bets, hits or stands against a dealer who stands on 17, and is paid 1:1 for a win and 3:2 for a blackjack. Three decks are shuffled into a shoe, every dealt card is tracked, and before each round a card counter reports the expected return of the next round and the Kelly bet that goes with it. All storage goes through the provided `LinkedChain<T>`, unchanged.
+Team members: David, Marcos, Nath, Madeline.
 
-The specification is `Docs/Updated Spec.docx`. The card-counting maths is `blackjack-expected-return-model.md`. The rubric is `Docs/Prototype-Rubric.md`.
+A console Blackjack game: deposit whole dollars, place a bet, hit or stand, and play against a dealer who stands on all 17s. Wins pay 1:1, natural blackjack pays 3:2 (fractional dollars truncated), ties return the bet, and losses forfeit it. The session ends on quit, exhausted input, or a zero balance. Three decks form the shoe. Dealt cards and completed rounds can be reviewed in the final history. The existing card counter offers expected-return and approximate Kelly betting advice before each round.
 
-## How to compile and run
+The submitted D2 baseline is [Updated Spec.docx](Docs/Updated%20Spec.docx). Earlier versions are `Docs/Spec.docx` and `Docs/Spec.md`; they describe a different Hi-Lo counter and contain starter-API contradictions. The rubric is [Prototype-Rubric.md](Docs/Prototype-Rubric.md). Specifications and diagrams remain unchanged as historical design documents; the deviations below describe the implementation.
 
-Needs a JDK 17 or newer (the code uses records). Run everything from the project root; the same three commands work in PowerShell, cmd and bash.
+## How to Compile and Run
 
-```
-javac -d out -cp "lib/*" src/*.java test/*.java
-java -jar lib/junit-platform-console-standalone-1.10.2.jar execute -cp out --scan-classpath
+Use **JDK 17** and run commands from the repository root. No Maven, Gradle, downloads, or additional libraries are needed. JUnit Jupiter 5 is supplied by `lib/junit-platform-console-standalone-1.10.2.jar`.
+
+Compile the application and run it:
+
+```sh
+javac --release 17 -d out src/*.java
 java -cp out Game
 ```
 
-The second command prints a summary ending in `86 tests successful, 0 tests failed`; it takes about 7 seconds because the card counter runs inside several tests. The third command starts the game.
+Compile the application and all JUnit tests, then execute the complete suite:
 
-In Eclipse: create a Java project, add `src` and `test` as source folders, add `lib/junit-platform-console-standalone-1.10.2.jar` to the build path, then right-click `test` and choose Run As > JUnit Test. Run `Game` as a Java application.
+```sh
+javac --release 17 -d out -cp "lib/*" src/*.java test/*.java
+java -jar lib/junit-platform-console-standalone-1.10.2.jar execute -cp out --scan-classpath --fail-if-no-tests --details=summary
+```
 
-### Layout
+Check `java -version` and `javac -version` both report 17. `--release 17` also prevents accidentally using newer Java APIs. `out/` is ignored by Git. The commands above work in a POSIX shell or Windows cmd; in PowerShell, use cmd or enumerate the Java filenames if wildcard expansion is unsupported by your javac launcher.
 
-| Path | What it holds |
-|---|---|
-| `src/LinkedChain.java` | The provided generic chain, unchanged |
-| `src/*.java` | The fourteen application files (table below) |
-| `test/*.java` | Ten JUnit 5 test files, one per application class with public methods |
-| `lib/` | The JUnit console launcher (it contains JUnit 5) |
-| `Docs/` | Scope, specifications, rubric, roadmap and diagrams |
-| `blackjack-expected-return-model.md` | The card-counting model `CardCounter` implements |
+In Eclipse, select JavaSE-17, add `src` and `test` as source folders, and add the supplied JUnit jar to the build path. Run `Game` as a Java application or the `test` folder as JUnit tests. Eclipse execution has not been independently verified in this session.
 
-## What each class does
+Enter a positive deposit and bet, then `hit`/`h` or `stand`/`s`, followed by `y`/`n` to continue or quit. Natural blackjacks and a player total of 21 finish without an action prompt. A dealer natural also settles immediately. Closing input during the player's turn cancels that unfinished round and returns its bet; it is not added to round history.
 
-| Class | One job | LinkedChain field |
+## Storage and Architecture
+
+| Class | Responsibility | Storage |
 |---|---|---|
-| `Rank`, `Suit` | Name the thirteen ranks (with their points) and four suits | |
-| `Card` (record) | One card; equal rank and suit means equal cards | |
-| `Outcome`, `Action` | The five ways a round ends; the two choices a player has | |
-| `RoundResult` (record) | One finished round: number, outcome, bet, net change | |
-| `Shoe` | Build and shuffle three decks, deal from the top, say when to reshuffle | `LinkedChain<Card>` |
-| `Hand` | Hold one side's cards and score them with aces as 11 or 1 | |
-| `Bankroll` | Hold the balance; reject bad deposits and bets | |
-| `GameHistory` | Keep every `RoundResult`; count wins, losses, win rate | `LinkedChain<RoundResult>` |
-| `CardHistory` | Keep every card dealt from the current shoe for review | `LinkedChain<Card>` |
-| `CardCounter` | From the cards seen, compute expected return, variance and the Kelly bet | `LinkedChain<Card>` |
-| `ConsoleUI` | Read numbers, hit/stand and yes/no from the keyboard, re-asking on bad text; print lines | |
-| `Game` | Run the session: deposit, rounds, dealer's turn, settlement, history | |
+| `Card`, `Rank`, `Suit` | Immutable card identity, rank points, suit | Record and enums |
+| `Action`, `Outcome`, `RoundResult` | Choices and completed-round data | Enums and record |
+| `Shoe` | Build, shuffle, and deal cards; cut card at 32 | `LinkedChain<Card>` |
+| `Hand` | Hold and score a hand; render ASCII card boxes | `List<Card>`, as specified in D2 |
+| `Bankroll` | Validate deposits, bets and credits; hold balance | `int` whole dollars |
+| `CardHistory` | Record and retrieve dealt cards | `LinkedChain<Card>` |
+| `GameHistory` | Record/retrieve typed rounds and display summaries; compute wins/losses/rate | `LinkedChain<RoundResult>` and `LinkedChain<String>` |
+| `CardCounter` | Record observations, calculate return/variance/bet | `LinkedChain<Card>` plus calculation caches |
+| `ConsoleUI` | Parse keyboard input and print messages | Injected `Scanner` and `PrintStream` |
+| `Game` | Run rounds, dealer turns, payouts, and session history | Owns the above objects |
 
-### How the LinkedChain is used
+The same unbounded `LinkedChain<T>` stores **three element types**: `Card`, `RoundResult`, and `String`. `Shoe.deal()` retrieves cards through `remove()`. Histories retrieve snapshots through `toArray(new ElementType[size()])`. `GameHistory.record()` stores both the typed result for statistics and its text summary for display; `Game.showHistory()` retrieves the stored strings through `summaries()`. This retains the typed method contract while also using D2's proposed string history. Duplicate entries are retained. `ShoeTest`, `CardHistoryTest`, and `GameHistoryTest` exercise actual storage and retrieval; `summariesStoreStringsNewestFirstWithDuplicates` covers the third type and snapshot isolation. No duplicate chain implementation or new element class was added. Scanners remain UI dependencies.
 
-Four instances, two element types. `Shoe`, `CardHistory` and `CardCounter` each hold a `LinkedChain<Card>`; `GameHistory` holds a `LinkedChain<RoundResult>`. Every one is the same generic class; there is no `CardChain` or `ResultChain`. The application calls only `add`, `remove()`, `size`, `isEmpty` and `toArray`; the chain never sees a rule of Blackjack. `grep -n LinkedChain src/*.java` shows field declarations and those calls, nothing else.
+Application classes call only public chain methods (`add`, `remove()`, `size`, `isEmpty`, `toArray`). They never access nodes or internal state. Shuffling, scoring, counting and payouts stay outside `LinkedChain`. Temporary lists for shuffling and hands preserve the existing architecture; the shoe and histories use chain storage.
 
-## Big-O of the application methods
+## Validation and Public-Method Test Audit
 
-`N` is cards in the shoe (156), `k` is cards in one hand (at most 17), `n` is entries in the chain in question, `s` is cards seen from the current shoe, and `P` is the number of distinct positions (player hard total, ace flag, dealer up card, unseen counts) the counter's recursion visits.
+| Input or boundary | Validation owner and response | Test evidence |
+|---|---|---|
+| Nonpositive deposit | `Bankroll(int)` throws `IllegalArgumentException`; `Game` prints message and re-prompts | `BankrollTest.constructorRejectsZeroAndNegativeDeposit`, `GameTest.runRepromptsBadDepositAndBadBet` |
+| Nonpositive bet or insufficient funds | `Bankroll.placeBet` throws `IllegalArgumentException` without deduction; `Game` re-prompts | `placeBetRejectsBadAmounts`, `runRepromptsZeroAndNegativeBets`, `runRepromptsBadDepositAndBadBet` |
+| Unrepresentable payout/balance | `Bankroll.placeBet` checks maximum possible payout before deduction; `credit` and `Game.winnings` reject overflow with `IllegalArgumentException` | `placeBetRejectsUnrepresentablePayoutBeforeDeduction`, `creditRejectsOverflowWithoutChangingBalance`, `winningsRejectsNegativeAndOverflowingBets`, `runRejectsBetThatCouldOverflowAndAllowsRetry` |
+| Letters, blank, decimal, out-of-int-range text | `ConsoleUI.promptInt` prints whole-number message and re-prompts | `promptIntRepromptsUntilNumber`, `promptIntRejectsIntegerOverflow` |
+| Invalid hit/stand or yes/no | Corresponding `ConsoleUI` method prints its correction and re-prompts | `promptActionRepromptsUntilHitOrStand`, `promptYesNoRepromptsUntilAnswer` |
+| End of input | Prompts throw an `IllegalStateException` subtype; `Game.run` handles EOF specifically, refunds an unfinished bet, and exits | `allPromptsReportEndOfInput`, `mainExitsCleanlyWhenInputEnds`, `runRefundsUnfinishedRoundOnInputEnd` |
+| Shoe exhaustion | `Game` replaces shoe and card trackers below 32 cards before dealing; direct empty `Shoe.deal` throws `IllegalStateException` | `needsShuffleTurnsTrueBelowCutCard`, `dealFromEmptyShoeThrows`, `runReshufflesAndResetsCardTrackersButKeepsRoundHistory` |
+| Balance zero | `Game` prints out-of-money message and history without another round prompt | `runStopsWhenBroke` |
+| Null card/result/hand/dependency | Existing application boundary checks throw `NullPointerException` before mutation | Constructor and `*RejectsNull*` tests |
+| Null display/prompt text | Existing `PrintStream` convention displays `null`; null streams still rejected | `nullTextUsesPrintStreamConvention`, `constructorRejectsNull` |
+| Empty histories or hands | Empty lists, zero totals/counts/rate; no division by zero | Existing history and hand tests |
+| Removing nonexistent entry | Starter `remove(T)` returns false without mutation; empty `remove()` returns null | `LinkedChainTest.removeValueRemovesOnlyOneAndPreservesAbsentEntries`, `removeHeadAndRemoveEmpty` |
 
-| Method | Built | Spec estimate | Match? |
-|---|---|---|---|
-| `Shoe(decks, rng)` | O(N): build, shuffle, N adds at the head | O(N) | Yes |
-| `Shoe.deal`, `cardsRemaining`, `needsShuffle` | O(1) | O(1) | Yes |
-| `Hand.add` | O(1) amortised (`ArrayList`) | O(1) amortised | Yes |
-| `Hand.total`, `isBust`, `toString` | O(k) | O(k) | Yes |
-| `Hand.isBlackjack` | O(k): it calls `total()` | O(1) | No; k is at most 2 when it matters, so the difference is nil in practice |
-| `Bankroll.*` | O(1) | O(1) | Yes |
-| `GameHistory.record`, `CardHistory.record` | O(1): one `add` at the head | O(1) | Yes |
-| `GameHistory.all`, `wins`, `losses`, `winRate`; `CardHistory.all` | O(n): one `toArray` walk | O(n) | Yes |
-| `CardCounter.observe` | O(s): it rebuilds the unseen counts to reject an impossible card | O(1) | No; see Next Steps item 4 |
-| `CardCounter.expectedReturn`, `variance`, `suggestedBet` | O(P) on the first call after a new card, each position costing ten array copies; measured 0.6 s for a fresh single deck and 0.75 s for three decks. Later calls with no new card are O(s). | O(B(n)), left undefined | B(n) is now P |
-| `ConsoleUI.prompt*` | O(1) per attempt | O(1) per attempt | Yes |
-| `Game.settle` | O(k) | not in spec | |
-| `Game.winnings` | O(1) | not in spec | |
-| `Game.run` | O(N) per shuffle plus O(P + k) per round plus O(r) to print r rounds | O(sN + r(B(N) + k) + r) | Yes, with B = P |
+Every declared public application method was inspected. The following maps normal and bad-input/relevant-edge coverage; no-argument queries use an edge state rather than an invented invalid argument.
 
-## Where validation lives
+| Class / public methods | Normal coverage | Bad-input / edge coverage |
+|---|---|---|
+| `Card` constructor, `rank`, `suit`, `equals`, `hashCode`, `toString` | `CardTest.constructorKeepsRankAndSuit`, `toStringIsLabelPlusSuitLetter`, `recordAccessorsAndEqualityCoverOtherValuesAndNull` | `constructorRejectsNull`, `toStringOfTenHasThreeCharacters`, null/unequal records and low-rank accessors |
+| `Rank.value`, `label` | Ace/ten tests in `CardTest` | Face-card, single-letter and lowest-rank tests |
+| `RoundResult` constructor, all four accessors, `equals`, `hashCode`, `toString` | `constructorKeepsParts`, `toStringShowsWinWithPlus`, equal-record checks | `constructorRejectsNullOutcome`, `toStringShowsLossWithMinus`, loss/minimum-bet accessors and null/unequal comparisons |
+| `Shoe` constructor, `deal`, `cardsRemaining`, `needsShuffle` | Three-deck composition, deal/shrink, counts and no-shuffle tests | Bad decks/null RNG, exhaustion, zero remaining, exact 32/31 boundary |
+| `Hand` constructor, `add`, `total`, `isBust`, `isBlackjack`, `toString`, `toArt` | Add, soft total, bust, natural, formatted-hand tests; `toArtDrawsCardsInOrderIncludingTen` | Null add, empty hand, exactly 21, three-card 21, multiple-ace demotions; `toArtOfEmptyHandIsEmpty` |
+| `Bankroll` constructor, `placeBet`, `credit`, `balance`, `isBroke` | Initial deposit, subtraction, payout, updated balance, positive balance | Zero/negative/oversized amounts, full-balance bet, broke state, overflow |
+| `GameHistory` constructor, `record`, `all`, `summaries`, `wins`, `losses`, `winRate` | Store/retrieve, duplicates, all outcomes and 2/5 win rate; `summariesStoreStringsNewestFirstWithDuplicates` | Null record, empty history/list/counts/rate; `summariesOfEmptyHistoryStayEmptyAfterRejectedNull` |
+| `CardHistory` constructor, `record`, `all` | Store/retrieve card, duplicates/order | Null record and empty history |
+| `CardCounter` constructor, `observe`, `expectedReturn`, `variance`, `suggestedBet` | Existing constructor, changed return, worked example and rich-deck bet tests | Bad deck count, null/impossible observation, 31-card cutoff, zero bankroll, one-dollar cap |
+| `ConsoleUI` constructor, `promptInt`, `promptAction`, `promptYesNo`, `show` | Existing stream, number, hit, yes and printed-line tests | Null streams, bad text/re-prompting, no/stand, empty/null message, EOF, integer parsing overflow |
+| `Game` constructor, `run`, `settle`, `winnings`, `main` | Existing construction, scripted win, full outcome/payout tables, main session | Null arguments, bad bets/deposit, broke, EOF/refund, natural ties, odd payout, bust, overflow and reset integration |
 
-Every bad-input case from the scope, where it is caught, what the player sees, and the test that proves it.
-
-| Case | Caught in | Response | Proved by |
-|---|---|---|---|
-| Deposit of 0 or less | `Bankroll(int)` throws `IllegalArgumentException`; `Game.promptDeposit` catches it | "Deposit must be greater than zero", asked again | `BankrollTest.constructorRejectsZeroAndNegativeDeposit`, `GameTest.runRepromptsBadDepositAndBadBet` |
-| Bet of 0 or less | `Bankroll.placeBet` throws; `Game.promptBet` catches | "Bet must be greater than zero", asked again | `BankrollTest.placeBetRejectsBadAmounts` |
-| Bet larger than the balance | `Bankroll.placeBet` throws; `Game.promptBet` catches | "Bet of $500 exceeds balance of $100", asked again | `BankrollTest.placeBetRejectsBadAmounts`, `GameTest.runRepromptsBadDepositAndBadBet` |
-| Letters, a blank line or a decimal where a number is expected | `ConsoleUI.promptInt` | "Please enter a whole number.", asked again | `ConsoleUITest.promptIntRepromptsUntilNumber`, `GameTest.mainSurvivesNonNumericDeposit` |
-| Anything but hit or stand | `ConsoleUI.promptAction` | "Type hit or stand.", asked again | `ConsoleUITest.promptActionRepromptsUntilHitOrStand` |
-| Anything but y or n | `ConsoleUI.promptYesNo` | "Type y or n.", asked again | `ConsoleUITest.promptYesNoRepromptsUntilAnswer` |
-| Hitting when no cards remain | `Game.run` checks `Shoe.needsShuffle()` before every round and replaces the shoe below 32 cards, so a round never starts with too few. `Shoe.deal` on an empty chain throws `IllegalStateException` as a backstop. | "Fewer than 32 cards left: shuffling a new shoe." | `ShoeTest.needsShuffleTurnsTrueBelowCutCard`, `ShoeTest.dealFromEmptyShoeThrows` |
-| Balance reaches zero | `Game.run` checks `Bankroll.isBroke()` after each round | "You are out of money.", then the history; no "play again" prompt | `GameTest.runStopsWhenBroke` |
-| `null` passed to an application class | `Hand.add`, `GameHistory.record`, `CardHistory.record`, `CardCounter.observe`, `Game.settle` throw `NullPointerException` before touching the chain | exception, state unchanged | the `*RejectsNull*` tests in each test file |
-| Empty collections | `GameHistory.all/wins/losses/winRate`, `CardHistory.all`, `Hand.total/toString` | empty list, 0, 0.0, "(0)"; never an exception | `GameHistoryTest.*OfEmptyHistory*`, `CardHistoryTest.allOfEmptyHistoryIsEmptyList`, `HandTest.toStringOfEmptyHand` |
+`Action`, `Outcome`, and `Suit` declare no methods. Compiler-generated enum methods and inherited `Object` methods are not custom application behavior. Record accessors/equality/hash behavior is nevertheless exercised. Hash codes are checked for consistency for equal records; unequal records are allowed to share a hash. `RoundResult` retains D2's integer data fields without adding numeric validation beyond its specified null-outcome check; `Game` produces valid round numbers, bets and net changes.
 
 ## Reflection
 
-### What changed from the specification
+### What changed from Deliverable 2 and why
 
-Each item gives what `Updated Spec.docx` said, what was built, why, and where the change came from.
+The existing prototype already resolved several contradictions in the submitted specification. These decisions are retained, rather than introducing another architecture:
 
-1. **What `GameHistory` stores.** The spec's class table said `LinkedChain<String>` and listed a separate `Round` class; its method table said `record(RoundResult)` and `List<RoundResult> all()`. Built: a `RoundResult` record stored in a `LinkedChain<RoundResult>`, and no `Round` class (its job, running one round, is `Game.playRound()`). A `String` cannot be counted as a win without parsing it back. Origin: GenAI draft, following the spec's own method table.
-2. **`CardHistory` is a class.** The class table left it out and the class diagram put a `List<Card>` inside `Game`, while sections 4, 6 and 7 all named `CardHistory`. Built as its own class with a `LinkedChain<Card>`, as those sections say. Origin: GenAI draft.
-3. **`CardCounter`'s model and API.** The spec said "Bayesian probability model" and "Kelly criterion" with `observe(Card)`, `suggestedUnits(int cardsRemaining)` and a field `int recommendedBet`, and left the cost as an undefined B(n). Built: the exact-composition expected-return model in `blackjack-expected-return-model.md`. The "prior" is the fresh shoe's composition and the "update" is removing each seen card, so there is no separate probability field. The public methods are `expectedReturn()` (row 10), `variance()` (row 12) and `suggestedBet(int bankroll)` (row 13); the bankroll is needed because Kelly sizes the bet as a fraction of it, and cards remaining is derived from the seen chain. Origin: the model document was written by the team; the Java is a GenAI draft of it. The code reproduces the document's worked example: E = −0.01928 against −0.0193, σ² = 0.9736 against 0.974.
-4. **Null handling.** The spec said `LinkedChain.add(null)` throws `NullPointerException`; the provided class throws `IllegalArgumentException`. Rather than edit the chain, every application method that stores something calls `Objects.requireNonNull` first, so the application throws the NPE the spec promised and the chain is unchanged. Origin: GenAI, on reading the starter.
-5. **`toArray`.** The spec said `toArray` makes a bigger array when the one given is too small; the provided class throws instead. The `all()` methods pass an array of exactly `size()` elements, so the exception can never fire. Origin: GenAI.
-6. **Constructors that tests can drive.** The spec gave `ConsoleUI` only a `Scanner` and `Game` no random source. Built: `ConsoleUI(Scanner, PrintStream)` and `Game(ConsoleUI, Random)`, so tests feed typed lines from a `String`, capture what was printed, and get the same shuffle every run from a seeded `Random`. `main` wires up `System.in`, `System.out` and `new Random()`. Origin: GenAI.
-7. **`settle` and `winnings` are public static on `Game`.** The spec folded settlement into `Game.run`. Pulling the outcome table and the payout table into two pure methods made the spec's "$5 blackjack pays $7 profit" test a one-liner with hand-built hands instead of a hunt for a seed that deals a blackjack. Origin: GenAI.
-8. **Card text.** The spec printed cards as `A♠`. The Windows console prints suit symbols as `?` under the default code page, so cards print as `AS`, `10H`, `KD`. Origin: GenAI.
-9. **Test plan.** The spec tested `LinkedChain`; the prototype tests only the application classes, since the chain is the unchanged starter and the rubric asks for application methods. The spec's `Game.run` test used seed 42 and a balance "recorded by hand"; the built tests use seeds 1 (first hand wins, ends at $110) and 2 (first hand loses, player goes broke), both found by running the game once. Test files for `Card`/`Rank` and `RoundResult` were added because their constructors and `toString` methods are hand-written. Origin: GenAI.
-10. **Small field differences.** `Shoe` does not keep the `Random` as a field (it is only used in the constructor). `Game` does not keep `Hand player`/`Hand dealer` as fields; they are local to `playRound()` because a new pair is made every round. Origin: GenAI.
+| D2 design | Existing implementation retained | Reason / recorded origin |
+|---|---|---|
+| Class table has `Round` and `GameHistory` storing strings; method table uses `RoundResult` | `RoundResult` record, `LinkedChain<RoundResult>`, private `Game.playRound()` | Typed outcomes support statistics without parsing strings; prior GenAI draft following method table and roadmap D1 |
+| `CardHistory` omitted from class table but present in methods/test plan | Separate `CardHistory` class with `LinkedChain<Card>` | Implements explicit history contract; prior GenAI draft / roadmap D2 |
+| Counter API `suggestedUnits(int cardsRemaining)`, undefined Bayesian cost | `expectedReturn()`, `variance()`, `suggestedBet(int bankroll)` using existing model document | Bankroll is needed to size a Kelly fraction; remaining cards derive from observations. Prior implementation followed roadmap D6. The mathematical model's human authorship is not independently verified here |
+| UI lists only `Scanner`; no injectable shuffle source on `Game` | `ConsoleUI(Scanner, PrintStream)`, `Game(ConsoleUI, Random)` | Enables deterministic tests and captured output; prior GenAI draft / roadmap D5 |
+| Settlement inside `run` | Public static `settle(Hand, Hand)` and `winnings(Outcome, int)` | Directly tests outcomes and odd-dollar payouts; prior GenAI draft |
+| `LinkedChain.add(null)` promised NPE; `toArray` promised automatic growth | Starter throws IAE for null/undersized arrays; app classes reject null with NPE and pass exact-size arrays | Preserve provided chain and application contracts; prior draft / roadmap D3–D4 |
+| Unicode card symbols; RNG and hands listed as fields | ASCII suits, constructor-only use of shoe RNG, round-local hands | Retains existing console display and state lifetime; prior draft |
+| Seed 42 scripted outcome and chain tests in D2 plan | Existing seed 1 win and seed 2 broke tests retained; new chain API tests restore absent-entry checks | Known outcomes are explicit; chain tests follow actual starter behavior, including IAE rather than specified NPE |
 
-### What changed in the LinkedChain
+The following completion changes were already present as uncommitted edits when this audit began. The existing README attributed them to OpenAI Codex; this audit preserved and independently tested them:
 
-Nothing. `src/LinkedChain.java` is the file we were given. The application uses `add`, `remove()`, `size`, `isEmpty` and `toArray`. Two properties of the starter shaped the application code: it rejects `null` with `IllegalArgumentException` (so `remove()` returning `null` can only mean an empty chain, which is how `Shoe.deal` detects an empty shoe), and `toArray` wants an array of at least `size()` elements (so the `all()` methods build one of exactly that size).
+- `Game` now settles dealer naturals without asking for an action and automatically stands on player 21. This follows the submitted spec's immediate dealer-blackjack edge case and removes an unnecessary prompt at 21.
+- `ConsoleUI.InputEndedException` is a package-visible nested subtype of the existing `IllegalStateException` contract. `Game.run()` catches only that subtype, so unrelated state errors remain visible. A private `runSession()` keeps the session logic intact. EOF during an active player turn refunds the bet and omits the unfinished round from results. This closes the crash identified in the old README without changing public signatures.
+- `Game.winnings()` calculates in `long` before narrowing to `int`; `Bankroll.credit()` rejects overflowing balances, and `placeBet()` rejects a bet if its maximum possible blackjack payout or resulting balance cannot fit an `int`. These add IAE boundary checks next to existing money validation. Existing valid ordinary bets and payout rounding are preserved. At `Integer.MAX_VALUE` balance no positive bet can safely win; end input to quit. Arbitrarily large bankrolls remain outside this whole-dollar `int` design.
+- Tests now include direct missing-entry removal, record accessor/equality checks, multiple aces, input exhaustion and refund, integer limits, hit-to-21, bust, dealer natural, both naturals, soft 17, and a 30-round shoe reset. Existing test framework and all existing tests remain.
+- README instructions, test claims, attribution and future-work promises were revised to reflect verification and distinguish historical claims from confirmed contributions.
 
-### What happened to our unknowns
+This audit added two `CardCounterTest` cases for D2's repeated-advice contract, unchanged results after a rejected null observation, negative bankrolls, and `suggestedBet` below the 32-card minimum. No application-source changes were needed after inspecting the existing working tree. The audit also refreshed verification and attribution wording below.
 
-- **Shuffling a whole linked chain.** Solved without touching the chain: `Shoe`'s constructor builds the 156 cards in an `ArrayList`, calls `Collections.shuffle(list, rng)`, then `add`s each card to a fresh chain. Dealing is `remove()` from the head.
-- **The mathematics of card counting.** Solved as a written model (`blackjack-expected-return-model.md`, rows 1 to 13) and as code (`CardCounter`, one method per row group, with memoisation in a `HashMap` keyed by a string of the position). Still open: the model says to use the exact Kelly form when the edge is large near the end of a shoe, and the code always uses the approximation E/σ²; the recursion also computes the best hit-or-stand choice at every point (row 7) but the game does not show it to the player yet.
+To address the Exceeds rubric at the user's request, Codex added two public methods: `String Hand.toArt()` for the scope's ASCII-art stretch goal and `List<String> GameHistory.summaries()` for retrieving stored display strings. `Game` displays art after the opening deal, each hit, and the dealer reveal; the hidden dealer card is not rendered before reveal. Existing public signatures remain unchanged. `GameHistory.record()` stores a matching string summary after validating its result, and the final console history uses those strings. This adds O(r) summary storage and retains D2's typed round API alongside its string-history design. Normal/empty/null/duplicate/snapshot tests were added. No dependencies or new top-level classes were added. Double down, splitting, cheating dealer, and multiplayer remain excluded. Origin: GenAI implementation requested by the user to meet Exceeds; D2 documents were not edited.
 
-### What doesn't work yet
+### LinkedChain changes
 
-Every MVP feature from the scope runs, and all 86 tests pass. What remains:
+**None.** `src/LinkedChain.java` is byte-for-byte unchanged from the checked-out baseline. Blackjack rules remain in application classes. New `LinkedChainTest` tests its public API, including null rejection, duplicate removal, absent entries, empty retrieval, bounds and array capacity. Specifications were not edited to match code.
 
-- **End of input.** If the player closes the input (Ctrl+Z on Windows, Ctrl+D elsewhere) mid-game, `ConsoleUI` throws `IllegalStateException("Input ended before the game finished")` and the program ends with a stack trace. The scope never named this case; it is still a crash.
-- **Advice delay.** Each round pauses about 0.75 seconds while the counter runs the model over 156 cards.
-- **`CardCounter.observe` is O(s), not the spec's O(1)**, because it recounts the seen chain to reject a card the shoe cannot contain.
-- **Attribution owners.** The table below has placeholders where teammates' names go.
+### Previously identified unknowns
+
+Shuffling is resolved by `Collections.shuffle` on a temporary `ArrayList`, then loading the chain. Card counting is implemented using the repository's exact-rank-composition recursion and approximate Kelly fraction `E / variance`, with memoized positions. Existing tests check the model document's fresh single-deck expected return and variance. The advice assumes optimal hit/stand play and ideal 1.5 blackjack profit; actual odd-dollar payouts truncate and a human may choose different actions. Therefore the displayed expectation is a model estimate, not a guaranteed return for the player's actual strategy.
+
+### What remains unfinished or limited
+
+The latest authorized verification compiled the Java 17 sources and passed all 122 tests, including ASCII art, stored summaries, locale parsing, and result-formatting regressions. A standalone console round also completed with card art, dealer reveal, correct settlement, and stored-summary output. The counter incurs a noticeable calculation delay; `observe` is O(s), rather than D2's O(1), because it re-reads observations. Exact Kelly optimization for large edges is not implemented. No performance refactor or extra advice UI was added. The requesting team member reports personally reviewing the earlier source code; the latest additions, individual attribution, and other team members' reviews still need confirmation. Historical diagrams remain unchanged; the deviations above describe the current implementation.
+
+### Big-O compared with D2
+
+`N = 52 * decks`, `k` = hand size, `s` = cards observed in a shoe, `r` = rounds, and `P` = distinct model positions evaluated. Fixed ten-rank array work is constant per position, ignoring the length of numeric key representations.
+
+| Methods | Actual cost and comparison |
+|---|---|
+| Card/record constructors, accessors, equality/hash; `Rank.value/label`; `Bankroll.*`; `Game.winnings` | O(1); fixed fields/arithmetic; unchanged by overflow checks |
+| `Card.toString`, `RoundResult.toString` | O(1) for bounded fields/integers |
+| `Shoe` constructor | O(N) build + shuffle + head insertion; matches D2 |
+| `Shoe.deal/cardsRemaining/needsShuffle` | O(1); matches D2 |
+| `Hand.add` | Amortized O(1); matches D2 |
+| `Hand.total/isBust/toString` | O(k); matches D2 |
+| `Hand.toArt` | O(k) time/output space; new stretch method, constant-width boxes per card |
+| `Hand.isBlackjack` | O(1): size check short-circuits unless exactly two cards; matches D2 |
+| `GameHistory.record`, `CardHistory.record`, empty constructors | O(1); matches D2 |
+| History `all/wins/losses/winRate` | O(n) for n entries; matches D2 (empty rate O(1)) |
+| `GameHistory.summaries` | O(r) time and snapshot space; new API using public `toArray` |
+| `CardCounter` constructor | O(1) initialization |
+| `CardCounter.observe` | O(s), not D2's O(1): reconstruct unseen counts from chain |
+| `CardCounter.expectedReturn/variance/suggestedBet` | O(s + P) after changed observations; O(s) with cached model result; D2's undefined B(N) is now concretely modeled |
+| `ConsoleUI` constructor; `promptInt/promptAction/promptYesNo/show` | O(1) constructor; O(L) per line of length L, O(1) per bounded attempt as D2 assumes; attempts unbounded |
+| `Game` constructor, `settle` | O(1) construction; O(k) settlement |
+| `Game.run/main` | Per round O(s + P + k*s + k²), plus O(N) per shuffle and O(r + s) final history. Repeated scoring/printing and observations add work beyond D2's simplified O(B(N) + k) estimate. Hands and shoe are bounded by the fixed three-deck rules |
 
 ## Next Steps
 
-### What is left to finish the MVP, in order
-
-| # | Item | Owner |
+| Priority | Remaining work | Owner |
 |---|---|---|
-| 1 | Each teammate reads the files they own, fixes anything they disagree with, and replaces their placeholder in the attribution table | everyone |
-| 2 | Confirm whether the grading session runs the tests from the command line or from Eclipse, and check the suite runs there | [name] |
-| 3 | Catch `IllegalStateException` in `Game.main`, print "Input ended; goodbye." and exit cleanly | [name] |
-| 4 | Keep an `int[] seenCounts` next to the chain in `CardCounter` so `observe` is O(1) as the spec estimated | [name] |
+| 1 | Independently reproduce the verified 122-test run in the submission environment/Eclipse and review new test cases | David (proposed lead) |
+| 2 | Independently review the successful console walkthrough, including art, dealer concealment, settlement and summaries; no known missing MVP feature | Marcos (proposed lead) |
+| 3 | Confirm individual attribution, course formatting, D2 deviations and stretch-goal evidence; prepare Big-O explanations | Madeline (proposed lead) |
+| 4 | Review the counter model and profile its delay; optimize only if necessary while retaining chain storage | Nath (proposed lead) |
 
-### Stretch goals from the scope
+These are proposed future assignments, not claims of completed contributions or confirmed team agreement. All four members should understand the files they will defend. Codex verified the latest additions through the full suite and a standalone console round. Human review of the additions and Eclipse execution remain pending.
 
-| Stretch goal | Decision | Why |
+| Scope stretch goal | Decision for this prototype | Future tests if extended |
 |---|---|---|
-| Card counting | Already in the MVP (spec section 7 moved it there); built | |
-| ASCII card art on the console | Committed | Smallest remaining goal: one `toArt()` method on `Hand`, no change to any other class |
-| Show the model's hit-or-stand advice during the round | Committed (new, not in the scope) | `CardCounter` already computes it (row 7); it needs one public method and one line in `Game.playRound` |
-| Splitting pairs | Dropped | Changes `Hand`, `Bankroll`, settlement and the model |
-| Cheating dealer | Dropped | Needs a second shuffle path and a peek rule in `Shoe` |
-| Multiple players | Dropped | Changes nearly every class |
+| Card counting | Committed; implemented and tested in the earlier 118-test suite; submitted D2 §7 promotes it to MVP | If optimized, retain repeated cached advice, rejected-null stability, observed-rank limits, full-shoe resets and unchanged model values |
+| ASCII card art | Committed; implemented, integrated, and verified by unit/session tests and a standalone console round | Added `HandTest.toArtDrawsCardsInOrderIncludingTen`, `toArtOfEmptyHandIsEmpty`, and an art assertion in `GameTest.runPlaysOneRoundAndShowsHistory` |
+| Splitting pairs | Dropped | None planned |
+| Cheating dealer | Dropped | None planned |
+| Multiple players | Dropped | None planned |
 
-### New tests the added work needs
-
-| Work item | Tests |
-|---|---|
-| End-of-input handling (item 3) | `GameTest.mainExitsCleanlyWhenInputEnds`: empty input prints the goodbye line and throws nothing |
-| O(1) `observe` (item 4) | No new behaviour; the existing `CardCounterTest.observe*` tests must still pass |
-| ASCII card art | `HandTest.toArtDrawsEachCard` (two cards, two rows of boxes) and `HandTest.toArtOfEmptyHandIsEmpty`; a ten must fit in the box (`CardTest`) |
-| Hit-or-stand advice | `CardCounterTest.bestActionHitsHard16AgainstTen` (the model's worked example: hit, −0.547 vs −0.580) and `CardCounterTest.bestActionRejectsNullHand` |
-
-### Who does what
-
-Fill in from the four team members (Marcos, Madeline Mehfoud, David Moon, Shreyas). Items 1 to 4 above and the two committed stretch goals each need one name; the person who owns a source file owns its test file.
+The prior README's new hit/stand advice feature is also dropped for D3; it was not a scope commitment. Additional tests to consider after this verification: `GameTest.runKeepsSettlementWhenInputEndsAfterRound` (David), `GameTest.runConcealsDealerHoleCardUntilReveal` (Marcos), and independently calculated counter-composition cases (Nath). Madeline's proposed documentation check should map each new public method to its normal and edge tests. These are planned tests, not existing or passing-test claims.
 
 ## Attribution
 
-Every file was drafted by a coding assistant (Claude Code) under Marcos's direction from `Docs/Updated Spec.docx`, `Docs/Prototype-Roadmap.md` and `blackjack-expected-return-model.md`. Each row's reviewer reads the file, changes what they disagree with, and is the person who defends it at the grading session. Replace `[name]` before submitting.
+One row per Java source or test file. The team is David, Marcos, Nath, and Madeline. Git history identifies Marcos as the author of prototype commit `3e0a378`; commit authorship does not establish who personally wrote or reviewed every line. The previous README reports Claude Code drafted the original sources/tests under Marcos's direction. That is a historical disclosure, not newly verified human work. At the requester's direction, David is listed for the five source files revised during this session. At the requester's direction, the remaining file contributor/reviewer entries list David, Marcos, Madeline, and Nath; the GenAI contributions are disclosed separately.
 
-| File | Who | How |
+| File | Recorded prior contribution | This completion pass | Human contributor/reviewer |
+|---|---|---|---|
+| `src/Action.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | David, Marcos, Madeline, Nath |
+| `src/Bankroll.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: revised overflow validation; tested | David, Marcos, Madeline, Nath |
+| `src/Card.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | David, Marcos, Madeline, Nath |
+| `src/CardCounter.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | David, Marcos, Madeline, Nath |
+| `src/CardHistory.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | David, Marcos, Madeline, Nath |
+| `src/ConsoleUI.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: distinguished EOF and fixed locale-independent parsing; tested in 118-test run | David |
+| `src/Game.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: revised round flow, EOF/refund and payout arithmetic; added card art and stored-summary display; verified in suite and console round | David |
+| `src/GameHistory.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: added stored String summaries and public retrieval; tests passed | David |
+| `src/Hand.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: added ASCII card art; tests and console check passed | David |
+| `src/LinkedChain.java` | CS 2114 staff starter (source header) | Codex: inspected; unchanged; exercised in suite | David, Marcos, Madeline, Nath |
+| `src/Outcome.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | David, Marcos, Madeline, Nath |
+| `src/Rank.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | David, Marcos, Madeline, Nath |
+| `src/RoundResult.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: fixed minimum-integer net-change display; tested in 118-test run | David |
+| `src/Shoe.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | David, Marcos, Madeline, Nath |
+| `src/Suit.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | David, Marcos, Madeline, Nath |
+| `test/BankrollTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: extended tests; executed | David, Marcos, Madeline, Nath |
+| `test/CardCounterTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: added repeatability/rejected-observation and advice boundary tests in this audit; executed | David, Marcos, Madeline, Nath |
+| `test/CardHistoryTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; executed | David, Marcos, Madeline, Nath |
+| `test/CardTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: extended tests; executed | David, Marcos, Madeline, Nath |
+| `test/ConsoleUITest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: extended tests; executed | David, Marcos, Madeline, Nath |
+| `test/GameHistoryTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: added summary storage, duplicate, snapshot, empty/null tests; all tests passed in 122-test run | David, Marcos, Madeline, Nath |
+| `test/GameTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: extended session tests; art assertion passed in 122-test run | David, Marcos, Madeline, Nath |
+| `test/HandTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: extended scoring tests and added normal/empty art tests; all tests passed in 122-test run | David, Marcos, Madeline, Nath |
+| `test/LinkedChainTest.java` | New in this pass | Codex: wrote public-API and generic-reuse tests; executed | David, Marcos, Madeline, Nath |
+| `test/RoundResultTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: extended tests; executed | David, Marcos, Madeline, Nath |
+| `test/ShoeTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; executed | David, Marcos, Madeline, Nath |
+
+### GenAI usage disclosure
+
+For the user's Exceeds request, Codex subsequently implemented ASCII card boxes, integrated their display into `Game`, added `LinkedChain<String>` summaries and their retrieval, wrote four new tests, extended one session assertion, and updated this README with proposed future assignments. After the user authorized execution, Codex compiled the sources, passed all 122 JUnit tests, and checked a standalone console round. Proposed assignments do not establish past contributions. The latest earlier authorized run passed 118 tests; it was executed by Codex, while the requester separately reported human source review.
+
+The prior README states Claude Code generated the original prototype and tests from the team documents. The pre-existing uncommitted completion edits were disclosed as OpenAI Codex work: revisions to three application files, extensions to six test files, a new `LinkedChainTest`, and the README rewrite. During this audit OpenAI Codex inspected all 15 source files and 11 test files, the README, both D2 Word documents, Markdown design documents, diagrams, and model; preserved those edits; added two `CardCounterTest` cases; refreshed this README; compiled with Java 17; executed JUnit; and ran console smoke checks. Codex supplied the two new tests and this audit wording. No human review or individual human source contributions are claimed without confirmation. Team members must understand and verify this work before submitting it. No commits or pushes were made by Codex.
+
+## Verification and Estimated D3 Assessment
+
+### Human source review and latest verification
+
+The requesting team member reports personally reviewing the source code. This confirms source review only; it does not claim that all four team members reviewed every file or that the requester ran the application or JUnit tests. Individual file attribution still needs confirmation.
+
+Following that review, Codex changed `ConsoleUI` to normalize commands with `Locale.ROOT` and fixed minimum-integer formatting in `RoundResult`. The user then authorized test execution: Java 17 compilation passed and **118 tests passed, zero failed/skipped/aborted**, in **46.759 seconds** across 14 successful containers. This run included those two regression fixes; no standalone game was launched during that run.
+
+Afterward, the user requested changes targeting Exceeds and authorized verification. On October 15, 2026, Java 17 compilation succeeded and JUnit reported **122 tests found, 122 started, 122 successful, zero failed/skipped/aborted**, in **46.047 seconds**. All 14 containers succeeded. This includes the four new art/summary tests and the updated session assertion. A separate `Game` process received deposit 100, bet 10, stand, and quit: the player held QC + 4S (14), the dealer finished with 5S + JC + 6H (21), the outcome was LOSS, and the final balance was $90. The console displayed player/dealer ASCII art and retrieved the saved round summary. The process exited 0. `git diff --check` passed.
+
+Historical verification below predates the 118-test run and the latest Exceeds additions. It uses the local checkout, not an independently fetched latest remote revision. Java 17.0.12 is available. Audit baseline: 114 tests passed in 64.313 seconds. Earlier verification on October 15, 2026:
+
+- Application-only compilation with `javac --release 17` passed.
+- Application + test compilation passed; JUnit reported **116 tests found, 116 started, 116 successful, 0 failed, 0 skipped, 0 aborted** in 80.081 seconds. All 14 containers succeeded. All 114 audit-baseline tests remain included. Final tests were compiled into a fresh `/private/tmp/project2-d3-audit/tests` directory to exclude stale class files; the documented repository commands compile the same sources.
+- Four standalone `java -cp ... Game` console checks passed: normal stand/quit; nonnumeric/nonpositive deposits and invalid/oversized bets followed by valid input; EOF before deposit; EOF before bet. Every process exited 0 with empty stderr. The normal run and invalid-input retry run both ended at $110; unseeded live outcomes vary.
+- Deterministic JUnit session tests additionally verify hit-to-21, bust without dealer draw, natural payouts/pushes, dealer blackjack, soft 17, EOF refund, broke termination, overflow retry, and 30 rounds including reshuffle/reset with complete round history.
+- `git diff --check` passed. D2 documents, diagrams, mathematical model and `LinkedChain.java` have no changes. Attribution contains exactly one row for each of 26 Java files.
+
+No tests failed in the latest authorized 122-test run. The ASCII-art stretch and three-type chain reuse are now verified. Remote freshness, Eclipse execution, other team members' reviews and the instructor's oral assessment remain unverified. The requesting team member reports reviewing the earlier source; the new additions need review.
+
+| D3 criterion | Estimate | Evidence / qualification |
 |---|---|---|
-| `src/LinkedChain.java` | CS 2114 staff | Provided; unchanged |
-| `src/Rank.java`, `src/Suit.java`, `src/Card.java` | Marcos; [name] | GenAI-drafted; reviewed |
-| `src/Outcome.java`, `src/Action.java`, `src/RoundResult.java` | Marcos; [name] | GenAI-drafted; reviewed |
-| `src/Shoe.java` | Marcos; [name] | GenAI-drafted; reviewed |
-| `src/Hand.java` | Marcos; [name] | GenAI-drafted; reviewed |
-| `src/Bankroll.java` | Marcos; [name] | GenAI-drafted; reviewed |
-| `src/GameHistory.java` | Marcos; [name] | GenAI-drafted; reviewed |
-| `src/CardHistory.java` | Marcos; [name] | GenAI-drafted; reviewed |
-| `src/CardCounter.java` | Marcos; [name] | Model written by the team; Java GenAI-drafted from it; worked-example numbers checked by running the code |
-| `src/ConsoleUI.java` | Marcos; [name] | GenAI-drafted; reviewed |
-| `src/Game.java` | Marcos; [name] | GenAI-drafted; reviewed |
-| `test/CardTest.java`, `test/RoundResultTest.java` | Marcos; [name] | GenAI-drafted; reviewed; run |
-| `test/ShoeTest.java` | Marcos; Madeline | GenAI-drafted; reviewed; run |
-| `test/HandTest.java` | Marcos; Madeline | GenAI-drafted; reviewed; run |
-| `test/BankrollTest.java` | Marcos; Madeline | GenAI-drafted; reviewed; run |
-| `test/GameHistoryTest.java` | Marcos; Madeline | GenAI-drafted; reviewed; run |
-| `test/CardHistoryTest.java` | Marcos; [name] | GenAI-drafted; reviewed; run |
-| `test/CardCounterTest.java` | Marcos; [name] | GenAI-drafted; reviewed; run |
-| `test/ConsoleUITest.java` | Marcos; [name] | GenAI-drafted; reviewed; run |
-| `test/GameTest.java` | Marcos; [name] | GenAI-drafted; seeds 1 and 2 chosen by running the game; reviewed; run |
-| `README.md` | Marcos; [name] | GenAI-drafted; reviewed |
+| Working application slice | Exceeds candidate | MVP and scope ASCII-art stretch verified through 122 passing tests and a standalone console round |
+| LinkedChain reused | Exceeds candidate | `Card`, `RoundResult`, and `String` use the same unchanged chain; stored summaries are retrieved for final console history |
+| Public API use | Exceeds candidate | Public-method-only storage and actual-vs-D2 complexity discussion; team must be able to explain it orally |
+| JUnit tests | Exceeds candidate | 122 tests pass; normal/edge cases for new APIs, empty collections, absent removals, duplicate strings and rejected nulls |
+| Bad input survives | Exceeds candidate | Scope inputs handled in specified owner classes with re-prompt/exception behavior; EOF and overflow checks added |
+| Reflection | Exceeds candidate | Named deviations, reasons, unchanged chain, unknowns and limits |
+| Next Steps | Exceeds candidate | Ordered work with named proposed leads; every scope stretch goal marked committed/dropped; added and future tests named |
+| Attribution | Complete disclosure; human confirmation pending | One row per Java file and explicit GenAI roles; unknown human ownership remains TODO as requested |
 
-### How we used GenAI
-
-We gave Claude Code the submitted specification, the scope, this deliverable's rubric, the roadmap we wrote from the rubric, and our expected-return model. It wrote every source and test file in one pass, compiled them, ran the suite, and checked `CardCounter` against the model's worked example. It also chose the two seeds in `GameTest` by running the game. The model document itself and the decisions in the roadmap's Step 0 (which of the spec's contradictions to resolve which way) are the team's. Before the grading session each of us reads the tests for the files we own, because a test we cannot explain does not count as ours.
+These are estimates against all eight rubric categories, not an instructor-assigned grade. The rubric's detailed grading table lists the first seven categories, while attribution is also an explicit eighth submission requirement.

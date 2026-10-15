@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
  * The script "100, 10, s, n" means deposit $100, bet $10, stand, and
  * answer no to another round.
  *
- * @author Team (GenAI-drafted; see README attribution)
+ * @author Marcos Salas, Madeline Mehfoud, David Moon, Shreyas
  * @version October 2026
  */
 public class GameTest

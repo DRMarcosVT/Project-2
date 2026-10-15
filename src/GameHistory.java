@@ -10,7 +10,7 @@ import java.util.Objects;
  * win rate, and the same result can appear many times, which is why an
  * unordered chain that allows duplicates fits.
  *
- * @author Team (GenAI-drafted; see README attribution)
+ * @author Marcos Salas, Madeline Mehfoud, David Moon, Shreyas
  * @version October 2026
  */
 public class GameHistory

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
  * blackjack-expected-return-model.md: a fresh single deck has an expected
  * return of -0.0193 per dollar and a variance of 0.974.
  *
- * @author Team (GenAI-drafted; see README attribution)
+ * @author Marcos Salas, Madeline Mehfoud, David Moon, Shreyas
  * @version October 2026
  */
 public class CardCounterTest

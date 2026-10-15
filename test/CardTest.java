@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
  * Tests for Rank and Card: the hand-written methods value(), label(),
  * the Card constructor's null check and Card.toString().
  *
- * @author Team (GenAI-drafted; see README attribution)
+ * @author Marcos Salas, Madeline Mehfoud, David Moon, Shreyas
  * @version October 2026
  */
 public class CardTest

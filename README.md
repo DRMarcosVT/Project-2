@@ -221,7 +221,7 @@ Nothing. `src/LinkedChain.java` is the file we were given. The application uses 
 ### What happened to our unknowns
 
 - **Shuffling a whole linked chain.** Solved without touching the chain: `Shoe`'s constructor builds the 156 cards in an `ArrayList`, calls `Collections.shuffle(list, rng)`, then `add`s each card to a fresh chain. Dealing is `remove()` from the head.
-- **The mathematics of card counting.** Solved as a written model (`blackjack-expected-return-model.md`, rows 1 to 13) and as code (`CardCounter`, one method per row group, with memoisation in a `HashMap` keyed by a string of the position). Still open: the model says to use the exact Kelly form when the edge is large near the end of a shoe, and the code always uses the approximation E/σ²; the recursion also computes the best hit-or-stand choice at every point (row 7) but the game does not show it to the player yet.
+- **The mathematics of card counting.** Solved as a written model (`blackjack-expected-return-model.md`, rows 1 to 13) and as code (`CardCounter`, one method per row group), and we decided to size the bet with the Kelly approximation E/σ² rather than the exact Kelly number because the exact form is an optimisation, a search for the fraction that maximises the average of log(1 + fW), while the approximation is one division.
 
 ### What doesn't work yet
 
@@ -229,7 +229,6 @@ Every MVP feature from the scope runs, and all 116 tests pass. What remains:
 
 - **Advice delay.** Each round pauses about 0.75 seconds while the counter runs the model over 156 cards.
 - **`CardCounter.observe` is O(s) where the spec estimated O(1)**, because it recounts the seen chain to reject a card the shoe cannot contain.
-- **Exact Kelly near the end of a shoe.** Row 13 of the model gives the bet-size rule in two forms. The exact Kelly fraction is the f that maximises the average of log(1 + fW) over the four round results W ∈ {1.5, 1, 0, −1}, weighted by the chances from row 11. The approximation E/σ² is the second-order expansion of that average around f = 0, and `CardCounter.suggestedBet` uses only the approximation. The inputs the exact form needs are already computed: `nextRoundChances()` returns the four chances and `variance()` is built from them, so the missing piece is a search for the f where Σ P(W=w)·w/(1 + fw) = 0, a dozen evaluations of a four-term sum next to a recursion that takes 0.75 s. It was left out because the two forms give the same whole-dollar bet when the edge is a few percent, which the model says covers nearly every round: at an edge of 1% and variance 0.97 both say about 1% of the bankroll, so $1 on $100. The gap widens with the edge, and the approximation grows faster. On an even-money bet won 80% of the time, E = 0.6 and σ² = 0.64, so E/σ² says bet 94% of the bankroll while the exact form says 60%. A shoe whose remaining cards are mostly tens and aces produces a larger edge than a fresh one, and there `suggestedBet` overbets. Next Steps item 3 gives the fix.
 
 ## Next Steps
 

@@ -235,7 +235,7 @@ Every MVP feature from the scope runs, and all 116 tests pass. What remains:
 ### What is left to finish the MVP, in order
 
 1. Each teammate reads the files they own and fixes anything they disagree with. Owner: everyone.
-2. Keep an `int[] seenCounts` next to the chain in `CardCounter` so `observe` is O(1) as the spec estimated. Owner: [name].
+2. Keep an `EnumMap<Rank, Integer> seenCounts` next to the chain in `CardCounter`, incremented in `observe`, so the impossible-card check reads one entry (O(1), as the spec estimated) and rejects per rank rather than per ten-point bucket; `unseen()` then subtracts the thirteen counts from the fresh composition instead of walking the chain. Owner: [name].
 
 ### Stretch goals from the scope
 

@@ -71,7 +71,7 @@ Each entry gives what was built, then the spec's estimate, then whether they mat
 - `Bankroll.*`: O(1); the overflow checks are two comparisons. Spec O(1). Match.
 - `GameHistory.record`, `CardHistory.record`: O(1), one `add` at the head. Spec O(1). Match.
 - `GameHistory.all`, `wins`, `losses`, `winRate`; `CardHistory.all`: O(n), one `toArray` walk. Spec O(n). Match.
-- `CardCounter.observe`: O(s), it rebuilds the unseen counts to reject an impossible card. Spec O(1). No match; see Next Steps item 3.
+- `CardCounter.observe`: O(s), it rebuilds the unseen counts to reject an impossible card. Spec O(1). No match; see Next Steps item 2.
 - `CardCounter.expectedReturn`, `variance`, `suggestedBet`: O(P) on the first call after a new card, each position costing ten array copies; measured 0.6 s for a fresh single deck and 0.75 s for three decks. Later calls with no new card are O(s). Spec O(B(n)), left undefined. B(n) is now P.
 - `ConsoleUI.prompt*`: O(1) per attempt. Spec O(1) per attempt. Match.
 - `Game.settle`: O(k). Not in the spec.
@@ -229,7 +229,7 @@ Every MVP feature from the scope runs, and all 116 tests pass. What remains:
 
 - **Advice delay.** Each round pauses about 0.75 seconds while the counter runs the model over 156 cards.
 - **`CardCounter.observe` is O(s) where the spec estimated O(1)**, because it recounts the seen chain to reject a card the shoe cannot contain.
-- **Exact Kelly near the end of a shoe.** The model's exact form for a large edge is not implemented; the approximation E/σ² is always used.
+- **Exact Kelly near the end of a shoe.** Row 13 of the model gives the bet-size rule in two forms. The exact Kelly fraction is the f that maximises the average of log(1 + fW) over the four round results W ∈ {1.5, 1, 0, −1}, weighted by the chances from row 11. The approximation E/σ² is the second-order expansion of that average around f = 0, and `CardCounter.suggestedBet` uses only the approximation. The inputs the exact form needs are already computed: `nextRoundChances()` returns the four chances and `variance()` is built from them, so the missing piece is a search for the f where Σ P(W=w)·w/(1 + fw) = 0, a dozen evaluations of a four-term sum next to a recursion that takes 0.75 s. It was left out because the two forms give the same whole-dollar bet when the edge is a few percent, which the model says covers nearly every round: at an edge of 1% and variance 0.97 both say about 1% of the bankroll, so $1 on $100. The gap widens with the edge, and the approximation grows faster. On an even-money bet won 80% of the time, E = 0.6 and σ² = 0.64, so E/σ² says bet 94% of the bankroll while the exact form says 60%. A shoe whose remaining cards are mostly tens and aces produces a larger edge than a fresh one, and there `suggestedBet` overbets. Next Steps item 3 gives the fix.
 
 ## Next Steps
 
@@ -237,23 +237,22 @@ Every MVP feature from the scope runs, and all 116 tests pass. What remains:
 
 1. Each teammate reads the files they own and fixes anything they disagree with. Owner: everyone.
 2. Keep an `int[] seenCounts` next to the chain in `CardCounter` so `observe` is O(1) as the spec estimated. Owner: [name].
+3. Add a package-private `kellyFraction(double[] chances)` to `CardCounter` that bisects f in (0, 1) on Σ P(W=w)·w/(1 + fw) = 0, and have `suggestedBet` call it when the edge is above 5%. Below that the result equals E/σ² to the dollar, so the fresh-deck worked example is unchanged. Owner: [name].
 
 ### Stretch goals from the scope
 
 - **Card counting.** A stretch goal in the scope; the updated spec (section 7) moved it into the MVP. Built and running: `CardCounter` prints the expected return and the Kelly bet before every round, and `CardCounterTest` checks it against the model's worked example.
 - **ASCII card art on the console.** Committed. Smallest remaining goal: one `toArt()` method on `Hand`, no change to any other class.
 - **Show the model's hit-or-stand advice during the round.** Committed; this one is new and was not in the scope. `CardCounter` already computes it (row 7); it needs one public method and one line in `Game.playRound`.
-- **Splitting pairs.** Dropped. Changes `Hand`, `Bankroll`, settlement and the model.
-- **Cheating dealer.** Dropped. Needs a second shuffle path and a peek rule in `Shoe`.
-- **Multiple players.** Dropped. Changes nearly every class.
+- **Splitting pairs.** Dropped. We're keeping the BlackJack simple.
+- **Cheating dealer.** Dropped. Redundant by the linkedchain.
+- **Multiple players.** Dropped. Out of Scope.
 
 ### New tests the added work needs
 
-- **O(1) `observe` (item 3).** No new behaviour; the existing `CardCounterTest.observe*` and `repeatedAdviceAndRejectedObservationPreserveModel` tests must still pass.
+- **O(1) `observe` (item 2).** No new behaviour; the existing `CardCounterTest.observe*` and `repeatedAdviceAndRejectedObservationPreserveModel` tests must still pass.
+- **Exact Kelly (item 3).** `CardCounterTest.kellyFractionMatchesExactFormForLargeEdge`: chances of 0.8 for +1 and 0.2 for −1 must give 0.60, where E/σ² gives 0.94. `CardCounterTest.kellyFractionMatchesApproximationForSmallEdge`: the fresh-deck chances from the worked example must give the same whole-dollar bet as before. `CardCounterTest.kellyFractionRejectsChancesThatDoNotSumToOne` for the bad input.
 - **ASCII card art.** `HandTest.toArtDrawsEachCard` (two cards, two rows of boxes) and `HandTest.toArtOfEmptyHandIsEmpty`; a ten must fit in the box (`CardTest`).
-- **Hit-or-stand advice.** `CardCounterTest.bestActionHitsHard16AgainstTen` (the model's worked example: hit, −0.547 vs −0.580) and `CardCounterTest.bestActionRejectsNullHand`.
-
-
 
 ## Attribution
 
@@ -276,14 +275,14 @@ The test files were drafted by an AI assistant so that every branch of every pub
 - `src/CardCounter.java`: model written by Marcos with genAI assistance; Java drafted by Marcos from it; worked-example numbers checked by running the code; reviewed by [name].
 - `src/ConsoleUI.java`: drafted by Marcos; `InputEndedException` added by David Moon; reviewed by [name].
 - `src/Game.java`: drafted by Marcos; end-of-input handling, dealer blackjack and auto-stand added by David Moon; reviewed by [name].
-- `test/CardTest.java`: AI-drafted for branch coverage; extended by David Moon; reviewed by Marcos and David Moon; run.
-- `test/RoundResultTest.java`: AI-drafted for branch coverage; extended by David Moon; reviewed by Marcos and David Moon; run.
+- `test/CardTest.java`: AI-drafted for branch coverage; extended and reviewed by David Moon; reviewed by Marcos; run.
+- `test/RoundResultTest.java`: AI-drafted for branch coverage; extended and reviewed by David Moon; reviewed by Marcos; run.
 - `test/ShoeTest.java`: AI-drafted for branch coverage; reviewed by Marcos and David Moon; run.
-- `test/HandTest.java`: AI-drafted for branch coverage; extended by David Moon; reviewed by Marcos and David Moon; run.
-- `test/BankrollTest.java`: AI-drafted for branch coverage; extended by David Moon; reviewed by Marcos and David Moon; run.
+- `test/HandTest.java`: AI-drafted for branch coverage; extended and reviewed by David Moon; reviewed by Marcos; run.
+- `test/BankrollTest.java`: AI-drafted for branch coverage; extended and reviewed by David Moon; reviewed by Marcos; run.
 - `test/GameHistoryTest.java`: AI-drafted for branch coverage; reviewed by Marcos and David Moon; run.
 - `test/CardHistoryTest.java`: AI-drafted for branch coverage; reviewed by Marcos and David Moon; run.
-- `test/CardCounterTest.java`: AI-drafted for branch coverage; extended by David Moon; reviewed by Marcos and David Moon; run.
-- `test/ConsoleUITest.java`: AI-drafted for branch coverage; extended by David Moon; reviewed by Marcos and David Moon; run.
-- `test/GameTest.java`: AI-drafted for branch coverage, seeds 1 and 2 chosen by running the game; extended by David Moon; reviewed by Marcos and David Moon; run.
+- `test/CardCounterTest.java`: AI-drafted for branch coverage; extended and reviewed by David Moon; reviewed by Marcos; run.
+- `test/ConsoleUITest.java`: AI-drafted for branch coverage; extended and reviewed by David Moon; reviewed by Marcos; run.
+- `test/GameTest.java`: AI-drafted for branch coverage, seeds 1 and 2 chosen by running the game; extended and reviewed by David Moon; reviewed by Marcos; run.
 - `test/LinkedChainTest.java`: written by David Moon; reviewed by Marcos; run.

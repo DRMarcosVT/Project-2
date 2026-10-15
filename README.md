@@ -174,36 +174,36 @@ The prior README's new hit/stand advice feature is also dropped for D3; it was n
 
 ## Attribution
 
-One row per Java source or test file. The team is David, Marcos, Nath, and Madeline. Git history identifies Marcos as the author of prototype commit `3e0a378`; commit authorship does not establish who personally wrote or reviewed every line. The previous README reports Claude Code drafted the original sources/tests under Marcos's direction. That is a historical disclosure, not newly verified human work. At the requester's direction, David is listed for the five source files revised during this session. Other file owners/reviewers remain TODO until confirmed; the GenAI contributions are disclosed separately.
+One row per Java source or test file. The team is David, Marcos, Nath, and Madeline. Git history identifies Marcos as the author of prototype commit `3e0a378`; commit authorship does not establish who personally wrote or reviewed every line. The previous README reports Claude Code drafted the original sources/tests under Marcos's direction. That is a historical disclosure, not newly verified human work. At the requester's direction, David is listed for the five source files revised during this session. At the requester's direction, the remaining file contributor/reviewer entries list David, Marcos, Madeline, and Nath; the GenAI contributions are disclosed separately.
 
 | File | Recorded prior contribution | This completion pass | Human contributor/reviewer |
 |---|---|---|---|
-| `src/Action.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | TODO: verify teammate |
-| `src/Bankroll.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: revised overflow validation; tested | TODO: verify teammate |
-| `src/Card.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | TODO: verify teammate |
-| `src/CardCounter.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | TODO: verify teammate |
-| `src/CardHistory.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | TODO: verify teammate |
+| `src/Action.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | David, Marcos, Madeline, Nath |
+| `src/Bankroll.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: revised overflow validation; tested | David, Marcos, Madeline, Nath |
+| `src/Card.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | David, Marcos, Madeline, Nath |
+| `src/CardCounter.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | David, Marcos, Madeline, Nath |
+| `src/CardHistory.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | David, Marcos, Madeline, Nath |
 | `src/ConsoleUI.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: distinguished EOF and fixed locale-independent parsing; tested in 118-test run | David |
 | `src/Game.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: revised round flow, EOF/refund and payout arithmetic; added card art and stored-summary display; verified in suite and console round | David |
 | `src/GameHistory.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: added stored String summaries and public retrieval; tests passed | David |
 | `src/Hand.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: added ASCII card art; tests and console check passed | David |
-| `src/LinkedChain.java` | CS 2114 staff starter (source header) | Codex: inspected; unchanged; exercised in suite | TODO: verify teammate |
-| `src/Outcome.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | TODO: verify teammate |
-| `src/Rank.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | TODO: verify teammate |
+| `src/LinkedChain.java` | CS 2114 staff starter (source header) | Codex: inspected; unchanged; exercised in suite | David, Marcos, Madeline, Nath |
+| `src/Outcome.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | David, Marcos, Madeline, Nath |
+| `src/Rank.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | David, Marcos, Madeline, Nath |
 | `src/RoundResult.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: fixed minimum-integer net-change display; tested in 118-test run | David |
-| `src/Shoe.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | TODO: verify teammate |
-| `src/Suit.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | TODO: verify teammate |
-| `test/BankrollTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: extended tests; executed | TODO: verify teammate |
-| `test/CardCounterTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: added repeatability/rejected-observation and advice boundary tests in this audit; executed | TODO: verify teammate |
-| `test/CardHistoryTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; executed | TODO: verify teammate |
-| `test/CardTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: extended tests; executed | TODO: verify teammate |
-| `test/ConsoleUITest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: extended tests; executed | TODO: verify teammate |
-| `test/GameHistoryTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: added summary storage, duplicate, snapshot, empty/null tests; all tests passed in 122-test run | TODO: verify teammate |
-| `test/GameTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: extended session tests; art assertion passed in 122-test run | TODO: verify teammate |
-| `test/HandTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: extended scoring tests and added normal/empty art tests; all tests passed in 122-test run | TODO: verify teammate |
-| `test/LinkedChainTest.java` | New in this pass | Codex: wrote public-API and generic-reuse tests; executed | TODO: verify teammate |
-| `test/RoundResultTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: extended tests; executed | TODO: verify teammate |
-| `test/ShoeTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; executed | TODO: verify teammate |
+| `src/Shoe.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | David, Marcos, Madeline, Nath |
+| `src/Suit.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; exercised in suite | David, Marcos, Madeline, Nath |
+| `test/BankrollTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: extended tests; executed | David, Marcos, Madeline, Nath |
+| `test/CardCounterTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: added repeatability/rejected-observation and advice boundary tests in this audit; executed | David, Marcos, Madeline, Nath |
+| `test/CardHistoryTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; executed | David, Marcos, Madeline, Nath |
+| `test/CardTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: extended tests; executed | David, Marcos, Madeline, Nath |
+| `test/ConsoleUITest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: extended tests; executed | David, Marcos, Madeline, Nath |
+| `test/GameHistoryTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: added summary storage, duplicate, snapshot, empty/null tests; all tests passed in 122-test run | David, Marcos, Madeline, Nath |
+| `test/GameTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: extended session tests; art assertion passed in 122-test run | David, Marcos, Madeline, Nath |
+| `test/HandTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: extended scoring tests and added normal/empty art tests; all tests passed in 122-test run | David, Marcos, Madeline, Nath |
+| `test/LinkedChainTest.java` | New in this pass | Codex: wrote public-API and generic-reuse tests; executed | David, Marcos, Madeline, Nath |
+| `test/RoundResultTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: extended tests; executed | David, Marcos, Madeline, Nath |
+| `test/ShoeTest.java` | Marcos: prototype commit; prior README reports Claude Code draft | Codex: inspected; unchanged; executed | David, Marcos, Madeline, Nath |
 
 ### GenAI usage disclosure
 

@@ -5,7 +5,7 @@
  * BLACKJACK pays 3 to 2, WIN pays 1 to 1, PUSH returns the bet, and LOSS
  * and BUST forfeit it.
  *
- * @author Marcos Salas, Madeline Mehfoud, David Moon, Shreyas
+ * @author Team
  * @version October 2026
  */
 public enum Outcome

@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for RoundResult's null check and toString().
  *
- * @author Marcos Salas, Madeline Mehfoud, David Moon, Shreyas
+ * @author Team
  * @version October 2026
  */
 public class RoundResultTest

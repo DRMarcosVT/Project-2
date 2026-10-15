@@ -1,7 +1,7 @@
 /**
  * The two choices the player has during a round.
  *
- * @author Marcos Salas, Madeline Mehfoud, David Moon, Shreyas
+ * @author Team
  * @version October 2026
  */
 public enum Action

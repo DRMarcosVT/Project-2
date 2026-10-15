@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
  * Tests for GameHistory: record(), all(), wins(), losses() and winRate(),
  * including the empty-collection cases.
  *
- * @author Marcos Salas, Madeline Mehfoud, David Moon, Shreyas
+ * @author Team
  * @version October 2026
  */
 public class GameHistoryTest

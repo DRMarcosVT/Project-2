@@ -14,7 +14,7 @@ import java.util.Scanner;
  * System.in and System.out so the tests can feed typed lines from a
  * String and read back what was printed.
  *
- * @author Marcos Salas, Madeline Mehfoud, David Moon, Shreyas
+ * @author Team
  * @version October 2026
  */
 public class ConsoleUI

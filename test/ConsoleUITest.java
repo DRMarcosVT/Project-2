@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
  * and everything printed is captured in a buffer so the tests can count
  * the re-prompt messages.
  *
- * @author Marcos Salas, Madeline Mehfoud, David Moon, Shreyas
+ * @author Team
  * @version October 2026
  */
 public class ConsoleUITest

@@ -6,7 +6,7 @@
  * one place: a deposit must be positive, and a bet must be between 1 and
  * the current balance.
  *
- * @author Marcos Salas, Madeline Mehfoud, David Moon, Shreyas
+ * @author Team
  * @version October 2026
  */
 public class Bankroll

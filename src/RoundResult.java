@@ -10,7 +10,7 @@ import java.util.Objects;
  * @param netChange the change to the balance: positive for a win, zero for
  *                  a push, negative for a loss or bust
  *
- * @author Marcos Salas, Madeline Mehfoud, David Moon, Shreyas
+ * @author Team
  * @version October 2026
  */
 public record RoundResult(int round, Outcome outcome, int bet, int netChange)

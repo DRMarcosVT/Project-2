@@ -26,7 +26,7 @@ import java.util.Objects;
  * that. The map key is a String built from the position, which is the
  * simplest key that works.
  *
- * @author Marcos Salas, Madeline Mehfoud, David Moon, Shreyas
+ * @author Team
  * @version October 2026
  */
 public class CardCounter

@@ -9,7 +9,7 @@ import java.util.Objects;
  * The hand knows how to score itself: aces count 11 unless that would
  * bust, in which case they count 1.
  *
- * @author Marcos Salas, Madeline Mehfoud, David Moon, Shreyas
+ * @author Team
  * @version October 2026
  */
 public class Hand

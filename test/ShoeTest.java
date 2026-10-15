@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
  * Tests for Shoe: the constructor, deal(), cardsRemaining() and
  * needsShuffle(). A seeded Random makes every shuffle repeatable.
  *
- * @author Marcos Salas, Madeline Mehfoud, David Moon, Shreyas
+ * @author Team
  * @version October 2026
  */
 public class ShoeTest

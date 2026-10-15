@@ -23,7 +23,7 @@ import java.util.Scanner;
  *      while under 17.
  *   6. Settle the bet, record the round, and stop if the balance is zero.
  *
- * @author Marcos Salas, Madeline Mehfoud, David Moon, Shreyas
+ * @author Team
  * @version October 2026
  */
 public class Game

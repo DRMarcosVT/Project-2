@@ -178,10 +178,10 @@ Every file was drafted by a coding assistant (Claude Code) under Marcos's direct
 | `src/ConsoleUI.java` | Marcos; [name] | GenAI-drafted; reviewed |
 | `src/Game.java` | Marcos; [name] | GenAI-drafted; reviewed |
 | `test/CardTest.java`, `test/RoundResultTest.java` | Marcos; [name] | GenAI-drafted; reviewed; run |
-| `test/ShoeTest.java` | Marcos; [name] | GenAI-drafted; reviewed; run |
-| `test/HandTest.java` | Marcos; [name] | GenAI-drafted; reviewed; run |
-| `test/BankrollTest.java` | Marcos; [name] | GenAI-drafted; reviewed; run |
-| `test/GameHistoryTest.java` | Marcos; [name] | GenAI-drafted; reviewed; run |
+| `test/ShoeTest.java` | Marcos; Madeline | GenAI-drafted; reviewed; run |
+| `test/HandTest.java` | Marcos; Madeline | GenAI-drafted; reviewed; run |
+| `test/BankrollTest.java` | Marcos; Madeline | GenAI-drafted; reviewed; run |
+| `test/GameHistoryTest.java` | Marcos; Madeline | GenAI-drafted; reviewed; run |
 | `test/CardHistoryTest.java` | Marcos; [name] | GenAI-drafted; reviewed; run |
 | `test/CardCounterTest.java` | Marcos; [name] | GenAI-drafted; reviewed; run |
 | `test/ConsoleUITest.java` | Marcos; [name] | GenAI-drafted; reviewed; run |

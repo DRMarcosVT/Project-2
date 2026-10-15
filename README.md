@@ -263,15 +263,15 @@ The test files were drafted by an AI assistant so that every branch of every pub
 - `src/Rank.java`: drafted by Marcos; reviewed by Madeline Mehfoud.
 - `src/Suit.java`: drafted by Marcos; reviewed by Madeline Mehfoud.
 - `src/Card.java`: drafted by Marcos; reviewed by Madeline Mehfoud.
-- `src/Outcome.java`: drafted by Marcos; reviewed by [name].
-- `src/Action.java`: drafted by Marcos; reviewed by [name].
-- `src/RoundResult.java`: drafted by Marcos; reviewed by [name].
+- `src/Outcome.java`: drafted by Marcos; reviewed by Shreyas.
+- `src/Action.java`: drafted by Marcos; reviewed by Shreyas.
+- `src/RoundResult.java`: drafted by Marcos; reviewed by Shreyas.
 - `src/Shoe.java`: drafted by Marcos; reviewed by Madeline Mehfoud.
 - `src/Hand.java`: drafted by Marcos; reviewed by Madeline Mehfoud.
-- `src/Bankroll.java`: drafted by Marcos; overflow checks added by David Moon; reviewed by [name].
-- `src/GameHistory.java`: drafted by Marcos; reviewed by [name].
-- `src/CardHistory.java`: drafted by Marcos; reviewed by [name].
-- `src/CardCounter.java`: model drafted and coded by Marcos with genAI assistance; worked-example numbers checked by running the code; reviewed by [name].
+- `src/Bankroll.java`: drafted by Marcos; overflow checks added by David Moon; reviewed by Shreyas.
+- `src/GameHistory.java`: drafted by Marcos; reviewed by Shreyas.
+- `src/CardHistory.java`: drafted by Marcos; reviewed by Shreyas.
+- `src/CardCounter.java`: model drafted and coded by Marcos with genAI assistance; worked-example numbers checked by running the code; reviewed by Shreyas.
 - `src/ConsoleUI.java`: drafted by Marcos; `InputEndedException` added by David Moon; reviewed by David Moon.
 - `src/Game.java`: drafted by Marcos; end-of-input handling, dealer blackjack and auto-stand added by David Moon; reviewed by David Moon.
 - `test/CardTest.java`: AI-drafted for branch coverage; extended and reviewed by David Moon; reviewed by Marcos; run.

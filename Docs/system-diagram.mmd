@@ -1,0 +1,35 @@
+flowchart LR
+    UI["<b>ConsoleUI</b><br/>promptInt, promptAction,<br/>promptYesNo, show"]
+    G["<b>Game</b><br/>run"]
+
+    subgraph table["Table state"]
+        direction TB
+        BR["<b>Bankroll</b><br/>placeBet, credit, balance, isBroke"]
+        H["<b>Hand</b> (one each for player and dealer)<br/>add, total, isBust, isBlackjack"]
+        S["<b>Shoe</b><br/>shuffle, deal, cardsRemaining, needsShuffle"]
+    end
+
+    subgraph trackers["Trackers"]
+        direction TB
+        CC["<b>CardCounter</b><br/>observe, trueCount,<br/>suggestedUnits, reset"]
+        CH["<b>CardHistory</b><br/>record, timesSeen, all"]
+        GH["<b>GameHistory</b><br/>record, wins, losses,<br/>winRate, all"]
+    end
+
+    subgraph chains["LinkedChain&lt;T&gt; instances (storage only)"]
+        direction TB
+        LC1[("LinkedChain&lt;Card&gt;<br/>cards still in the shoe")]
+        LC2[("LinkedChain&lt;Card&gt;<br/>cards already dealt")]
+        LC3[("LinkedChain&lt;RoundResult&gt;<br/>finished rounds")]
+    end
+
+    UI <-- "in: int deposit/bet, Action, boolean<br/>out: String (hands, results, history)" --> G
+    G <-- "placeBet(int), credit(int)<br/>returns int balance or throws<br/>IllegalArgumentException" --> BR
+    G <-- "add(Card)<br/>returns int total, boolean isBust" --> H
+    G <-- "deal()<br/>returns Card" --> S
+    G <-- "observe(Card), trueCount(int)<br/>returns double trueCount,<br/>int suggestedUnits" --> CC
+    G -- "record(Card)" --> CH
+    G <-- "record(RoundResult)<br/>returns int wins/losses,<br/>double winRate" --> GH
+    S <-- "add(Card) after shuffle<br/>remove() on deal, returns Card" --> LC1
+    CH <-- "add(Card), count(Card), toList()<br/>returns int, List&lt;Card&gt;" --> LC2
+    GH <-- "add(RoundResult), toList()<br/>returns List&lt;RoundResult&gt;" --> LC3

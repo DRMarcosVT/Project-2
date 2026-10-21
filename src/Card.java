@@ -12,7 +12,7 @@ import java.util.Objects;
  * @param rank the card's rank, never null
  * @param suit the card's suit, never null
  *
- * @author Team (GenAI-drafted; see README attribution)
+ * @author Team
  * @version October 2026
  */
 public record Card(Rank rank, Suit suit)

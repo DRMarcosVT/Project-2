@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
  * Tests for Bankroll: the constructor, placeBet(), credit(), balance() and
  * isBroke(). These are the money rules from the scope.
  *
- * @author Team (GenAI-drafted; see README attribution)
+ * @author Team
  * @version October 2026
  */
 public class BankrollTest

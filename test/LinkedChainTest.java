@@ -1,7 +1,12 @@
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
-/** Public API checks against the unchanged starter, including the D2 test plan. */
+/**
+ * Public API checks against the unchanged starter, including the D2 test plan.
+ *
+ * @author Team
+ * @version October 2026
+ */
 public class LinkedChainTest
 {
     private static final Card ACE = new Card(Rank.ACE, Suit.SPADES);

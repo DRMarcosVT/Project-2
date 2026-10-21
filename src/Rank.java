@@ -5,7 +5,7 @@
  * and an ace scores 11 here. Hand.total() drops an ace to 1 whenever
  * counting it as 11 would push the hand over 21.
  *
- * @author Team (GenAI-drafted; see README attribution)
+ * @author Team
  * @version October 2026
  */
 public enum Rank

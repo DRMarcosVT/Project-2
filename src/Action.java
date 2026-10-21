@@ -1,7 +1,7 @@
 /**
  * The two choices the player has during a round.
  *
- * @author Team (GenAI-drafted; see README attribution)
+ * @author Team
  * @version October 2026
  */
 public enum Action

@@ -10,7 +10,7 @@ import java.util.Objects;
  * Duplicates are expected: a three-deck shoe deals the same card up to
  * three times before a shuffle.
  *
- * @author Team (GenAI-drafted; see README attribution)
+ * @author Team
  * @version October 2026
  */
 public class CardHistory

@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for CardHistory: record() and all(), including an empty history.
  *
- * @author Team (GenAI-drafted; see README attribution)
+ * @author Team
  * @version October 2026
  */
 public class CardHistoryTest

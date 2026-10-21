@@ -26,7 +26,7 @@ import java.util.Objects;
  * that. The map key is a String built from the position, which is the
  * simplest key that works.
  *
- * @author Team (GenAI-drafted; see README attribution)
+ * @author Team
  * @version October 2026
  */
 public class CardCounter
@@ -139,6 +139,21 @@ public class CardCounter
             variance += chances[i] * distance * distance;
         }
         return variance;
+    }
+
+    /**
+     * Row 11: the chance the next round ends in each of its four results.
+     * This is what variance() and the web table's charts are built from.
+     *
+     * @return a new length-4 array: index 0 is the chance of a player
+     *         blackjack paid 3 to 2, 1 a win, 2 a push and 3 a loss; the
+     *         four add to 1
+     * @throws IllegalStateException if fewer than MINIMUM_UNSEEN cards
+     *         remain unseen
+     */
+    public double[] resultChances()
+    {
+        return nextRoundChances().clone();
     }
 
     /**

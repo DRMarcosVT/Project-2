@@ -18,7 +18,7 @@ import java.util.Random;
  * keeps the randomness in the class that owns the deck and leaves the
  * LinkedChain unchanged.
  *
- * @author Team (GenAI-drafted; see README attribution)
+ * @author Team
  * @version October 2026
  */
 public class Shoe

@@ -118,6 +118,40 @@ public class CardCounterTest
         assertThrows(IllegalStateException.class, counter::variance);
     }
 
+    // ---- resultChances() ----
+
+    /**
+     * Normal: a fresh single deck matches the worked example (blackjack
+     * 4.6%, win 39.0%, push 8.4%, loss 47.9%), the four add to 1, and the
+     * array is a copy that the caller cannot use to change the counter.
+     */
+    @Test
+    public void resultChancesOfFreshDeckMatchModelAndAddToOne()
+    {
+        CardCounter counter = new CardCounter(1);
+        double[] chances = counter.resultChances();
+        assertEquals(4, chances.length);
+        assertEquals(0.046, chances[0], 0.001);
+        assertEquals(0.390, chances[1], 0.001);
+        assertEquals(0.084, chances[2], 0.001);
+        assertEquals(0.479, chances[3], 0.001);
+        assertEquals(1.0, chances[0] + chances[1] + chances[2] + chances[3], 1e-9);
+        assertEquals(counter.expectedReturn(),
+            1.5 * chances[0] + chances[1] - chances[3], 1e-9);
+
+        chances[3] = 0.0;
+        assertEquals(0.479, counter.resultChances()[3], 0.001);
+    }
+
+    /** Bad input: the same minimum of unseen cards applies. */
+    @Test
+    public void resultChancesRejectTooFewUnseenCards()
+    {
+        CardCounter counter = tenRichDeck();
+        counter.observe(new Card(Rank.SEVEN, Suit.CLUBS));
+        assertThrows(IllegalStateException.class, counter::resultChances);
+    }
+
     // ---- suggestedBet() ----
 
     /** Normal: a losing deck suggests the minimum; a rich deck bets more. */

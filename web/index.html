@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blackjack Table</title>
+<style>
+  /* Served by WebGame.java. Every number on this page comes from /api/state;
+     the charts are drawn here from the counter's four result chances. */
+  :root {
+    color-scheme: dark;
+    --surface-0: #141413;
+    --surface-1: #1a1a19;
+    --surface-2: #242423;
+    --border: #33332f;
+    --felt: #1d5a3c;
+    --felt-edge: #0f3a26;
+    --text-primary: #f0efec;
+    --text-secondary: #c3c2b7;
+    --text-muted: #8a897f;
+    --series-1: #3987e5;   /* the counter's numbers */
+    --series-2: #d95926;   /* the exact Kelly answer, for comparison */
+    --good: #3ab54a;
+    --bad: #e66767;
+    --card-face: #fbfaf5;
+    --card-red: #c62828;
+    --card-black: #1b1b1b;
+    --card-back: #2b4c8c;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; background: var(--surface-0); color: var(--text-primary);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { padding: 16px; }
+  h1 { font-size: 20px; margin: 0; font-weight: 600; letter-spacing: 0.2px; }
+  h2 { font-size: 13px; margin: 0 0 8px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.8px; color: var(--text-secondary); }
+  .muted { color: var(--text-muted); }
+  .num { font-variant-numeric: tabular-nums; }
+
+  header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center;
+    justify-content: space-between; margin-bottom: 14px; }
+  .stats { display: flex; gap: 20px; flex-wrap: wrap; }
+  .stat { display: flex; flex-direction: column; }
+  .stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); }
+  .stat .value { font-size: 22px; font-weight: 600; line-height: 1.2; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 16px; }
+  @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+  .stack { display: flex; flex-direction: column; gap: 16px; }
+
+  /* The table */
+  .table { background: radial-gradient(ellipse at 50% 30%, #257249 0%, var(--felt) 55%, var(--felt-edge) 100%);
+    border: 10px solid #4a2d16; border-radius: 200px 200px 24px 24px / 120px 120px 24px 24px;
+    padding: 24px 20px 20px; min-height: 420px; display: flex; flex-direction: column; justify-content: space-between; gap: 18px;
+    box-shadow: inset 0 0 40px rgba(0,0,0,0.35); }
+  .seat { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .seat .who { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.75); display: flex; gap: 10px; align-items: baseline; }
+  .seat .who .total:empty { display: none; }
+  .seat .who .total { font-size: 15px; font-weight: 700; color: #fff; background: rgba(0,0,0,0.3); padding: 1px 9px; border-radius: 999px; }
+  .cards { display: flex; gap: 8px; min-height: 104px; flex-wrap: wrap; justify-content: center; }
+  .card { width: 72px; height: 102px; border-radius: 8px; background: var(--card-face); color: var(--card-black);
+    position: relative; box-shadow: 0 3px 8px rgba(0,0,0,0.45); animation: deal 260ms ease-out; user-select: none; }
+  .card.red { color: var(--card-red); }
+  .card .corner { position: absolute; left: 7px; top: 5px; font-size: 16px; font-weight: 700; line-height: 1; text-align: center; }
+  .card .corner small { display: block; font-size: 14px; }
+  .card .corner.bottom { left: auto; right: 7px; top: auto; bottom: 5px; transform: rotate(180deg); }
+  .card .pip { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 34px; }
+  .card.back { background: repeating-linear-gradient(45deg, var(--card-back) 0 6px, #203a6b 6px 12px); border: 4px solid var(--card-face); }
+  @keyframes deal { from { transform: translateY(-24px) rotate(-4deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  .rule { color: rgba(255,255,255,0.55); font-size: 12px; text-align: center; letter-spacing: 1.5px; text-transform: uppercase; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.35); color: #fff; border-radius: 999px; padding: 4px 12px; font-size: 13px; }
+  .chip::before { content: ""; width: 14px; height: 14px; border-radius: 50%; background: #e2b53b; border: 3px dashed #fff; box-sizing: border-box; }
+
+  /* Controls */
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; min-height: 44px; }
+  .message { margin-top: 10px; min-height: 22px; font-size: 14px; }
+  .message.reject { color: var(--bad); }
+  .message.win { color: var(--good); }
+  .message.loss { color: var(--bad); }
+  button { font: inherit; font-weight: 600; padding: 9px 16px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text-primary); cursor: pointer; }
+  button.primary { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+  button:disabled { opacity: 0.45; cursor: default; }
+  input[type=number] { font: inherit; padding: 8px 10px; width: 130px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface-0); color: var(--text-primary); }
+  input[type=range] { width: 160px; }
+  label { font-size: 13px; color: var(--text-secondary); }
+
+  /* Advice and charts */
+  .advice-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 10px; }
+  .tile { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+  .tile .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); }
+  .tile .value { font-size: 20px; font-weight: 600; margin-top: 2px; }
+  .tile .sub { font-size: 12px; color: var(--text-secondary); }
+  .steps { font-size: 13px; color: var(--text-secondary); margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+  .steps b { color: var(--text-primary); font-weight: 600; }
+  .steps code { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; color: var(--text-primary); }
+  .chart { width: 100%; display: block; }
+  .chart text { fill: var(--text-secondary); font-size: 11px; }
+  .chart .axis { stroke: var(--border); stroke-width: 1; }
+  .chart .grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 2 3; }
+  .chart .bar { fill: var(--series-1); }
+  .chart .bar.hit { fill: transparent; }
+  .chart .line { fill: none; stroke: var(--series-1); stroke-width: 2; stroke-linejoin: round; }
+  .chart .area { fill: var(--series-1); opacity: 0.18; }
+  .chart .mark1 { fill: var(--series-1); stroke: var(--surface-1); stroke-width: 2; }
+  .chart .mark2 { fill: var(--series-2); stroke: var(--surface-1); stroke-width: 2; }
+  .chart .guide { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 3 3; }
+  .chart .label { fill: var(--text-primary); font-weight: 600; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+  .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+  .legend .s1::before { background: var(--series-1); }
+  .legend .s2::before { background: var(--series-2); }
+  .chart-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .tooltip { position: fixed; pointer-events: none; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 9px; font-size: 12px; color: var(--text-primary); display: none; z-index: 10; white-space: nowrap; }
+
+  /* History */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--border); }
+  th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; }
+  td.r, th.r { text-align: right; }
+  .outcome-WIN, .outcome-BLACKJACK { color: var(--good); }
+  .outcome-LOSS, .outcome-BUST { color: var(--bad); }
+  .dealt { display: flex; flex-wrap: wrap; gap: 4px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  .dealt span { background: var(--surface-2); border-radius: 4px; padding: 1px 5px; }
+  .dealt span.red { color: #ff8a80; }
+  .shoe-bar { height: 8px; background: var(--surface-2); border-radius: 4px; position: relative; overflow: hidden; margin-top: 6px; }
+  .shoe-bar .fill { height: 100%; background: var(--series-1); }
+  .shoe-bar .cut { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--series-2); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Blackjack</h1>
+    <div class="muted" id="subtitle">Dealer stands on 17. Blackjack pays 3 to 2. Three decks in the shoe.</div>
+  </div>
+  <div class="stats">
+    <div class="stat"><span class="label">Balance</span><span class="value num" id="balance">$0</span></div>
+    <div class="stat"><span class="label">Round</span><span class="value num" id="round">–</span></div>
+    <div class="stat"><span class="label">Record</span><span class="value num" id="record">0–0</span></div>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="stack">
+    <div class="panel">
+      <div class="table">
+        <div class="seat">
+          <div class="who">Dealer <span class="total num" id="dealer-total"></span></div>
+          <div class="cards" id="dealer-cards"></div>
+        </div>
+        <div class="rule" id="table-rule">Dealer stands on 17 &middot; Blackjack pays 3:2</div>
+        <div class="seat">
+          <div class="cards" id="player-cards"></div>
+          <div class="who">You <span class="total num" id="player-total"></span> <span class="chip num" id="bet-chip" hidden></span></div>
+        </div>
+      </div>
+      <div class="message" id="message"></div>
+      <div class="controls" id="controls"></div>
+    </div>
+
+    <div class="panel">
+      <div class="chart-row">
+        <h2>Shoe</h2>
+        <span class="muted" id="shoe-text">No shoe yet</span>
+      </div>
+      <div class="shoe-bar"><div class="fill" id="shoe-fill" style="width:0"></div><div class="cut" id="shoe-cut"></div></div>
+      <div class="chart-row" style="margin-top:12px"><h2>Unseen cards by rank</h2><span class="muted">what the counter works from</span></div>
+      <svg class="chart" id="rank-chart" viewBox="0 0 520 150" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+
+    <div class="panel">
+      <h2>Rounds played <span class="muted" id="history-note"></span></h2>
+      <table id="history"><thead><tr><th>Round</th><th>Outcome</th><th class="r">Bet</th><th class="r">Net</th></tr></thead><tbody></tbody></table>
+      <h2 style="margin-top:14px">Cards dealt from this shoe <span class="muted">(most recent first)</span></h2>
+      <div class="dealt" id="dealt"></div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="panel">
+      <h2>Card counter's advice for the next round</h2>
+      <div id="advice-empty" class="muted">Deposit to open the shoe.</div>
+      <div id="advice">
+        <div class="advice-grid">
+          <div class="tile"><div class="label">Expected return</div><div class="value num" id="edge"></div><div class="sub">cents per dollar bet</div></div>
+          <div class="tile"><div class="label">Variance</div><div class="value num" id="variance"></div><div class="sub">of one round's result</div></div>
+          <div class="tile"><div class="label">Kelly fraction</div><div class="value num" id="fraction"></div><div class="sub">of the bankroll</div></div>
+          <div class="tile"><div class="label">Suggested bet</div><div class="value num" id="suggested"></div><div class="sub" id="suggested-why"></div></div>
+        </div>
+        <ul class="steps" id="steps"></ul>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="chart-row"><h2>Next round's result, per dollar bet</h2><span class="muted">row 11 of the model</span></div>
+      <svg class="chart" id="pmf-chart" viewBox="0 0 520 190" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+
+    <div class="panel">
+      <div class="chart-row"><h2>Bankroll growth rate against bet fraction</h2><span class="muted">row 13: Kelly</span></div>
+      <svg class="chart" id="kelly-chart" viewBox="0 0 520 210" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="legend"><span class="s1">edge ÷ variance, what the counter bets</span><span class="s2">exact maximum of E[ln(1 + f·W)]</span></div>
+    </div>
+
+    <div class="panel">
+      <div class="chart-row">
+        <h2>Where the balance lands after <span id="n-label">100</span> rounds</h2>
+        <label>rounds <input type="range" id="n-rounds" min="10" max="500" step="10" value="100"></label>
+      </div>
+      <svg class="chart" id="pdf-chart" viewBox="0 0 520 190" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="muted" style="font-size:12px" id="pdf-note"></div>
+    </div>
+  </div>
+</div>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const SUIT = { SPADES: '♠', HEARTS: '♥', DIAMONDS: '♦', CLUBS: '♣' };
+  const RED = { HEARTS: true, DIAMONDS: true };
+  const PAYOUT = [1.5, 1, 0, -1];
+  const RESULT = ['Blackjack', 'Win', 'Push', 'Loss'];
+  let state = null;
+  let nRounds = 100;
+
+  // ---------------------------------------------------------------- server
+  async function call(path, method) {
+    const response = await fetch(path, { method: method || 'POST' });
+    state = await response.json();
+    render();
+  }
+  const move = (name, amount) => call('/api/' + name + (amount === undefined ? '' : '?amount=' + encodeURIComponent(amount)));
+
+  // ---------------------------------------------------------------- helpers
+  const money = n => (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString();
+  const cents = e => (e >= 0 ? '+' : '−') + Math.abs(e * 100).toFixed(2);
+  const pct = p => (p * 100).toFixed(1) + '%';
+  function el(tag, attrs, text) {
+    const node = document.createElement(tag);
+    for (const k in attrs || {}) { if (k === 'class') node.className = attrs[k]; else node.setAttribute(k, attrs[k]); }
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+  function svgEl(tag, attrs, text) {
+    const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const k in attrs || {}) node.setAttribute(k, attrs[k]);
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+  function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+  const tooltip = $('tooltip');
+  function hover(target, textFn) {
+    target.addEventListener('mousemove', e => {
+      tooltip.textContent = textFn();
+      tooltip.style.display = 'block';
+      tooltip.style.left = (e.clientX + 14) + 'px';
+      tooltip.style.top = (e.clientY + 14) + 'px';
+    });
+    target.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+  }
+
+  // ---------------------------------------------------------------- cards
+  function cardNode(card) {
+    const node = el('div', { class: 'card' + (RED[card.suit] ? ' red' : '') });
+    node.title = card.rank + ' of ' + card.suit.toLowerCase();
+    const symbol = SUIT[card.suit];
+    const corner = el('div', { class: 'corner' }, card.rank);
+    corner.appendChild(el('small', {}, symbol));
+    node.appendChild(corner);
+    node.appendChild(el('div', { class: 'pip' }, symbol));
+    const bottom = el('div', { class: 'corner bottom' }, card.rank);
+    bottom.appendChild(el('small', {}, symbol));
+    node.appendChild(bottom);
+    return node;
+  }
+  function renderHand(container, hand, keep) {
+    // Only append cards the seat does not show yet, so the deal animation
+    // runs once per card instead of on every refresh.
+    const cards = hand ? hand.cards : [];
+    const want = cards.length + (hand && hand.holeHidden ? 1 : 0);
+    if (!keep || container.childElementCount > want) clear(container);
+    const have = container.childElementCount;
+    cards.forEach((card, i) => { if (i >= have) container.appendChild(cardNode(card)); });
+    if (hand && hand.holeHidden) {
+      if (!container.querySelector('.back')) container.appendChild(el('div', { class: 'card back', title: 'face down' }));
+    } else {
+      const back = container.querySelector('.back');
+      if (back) back.remove();
+    }
+  }
+
+  // ---------------------------------------------------------------- the table
+  function renderTable(s) {
+    const inRound = s.phase === 'PLAYER_TURN' || s.phase === 'ROUND_OVER' || (s.phase === 'OVER' && s.player);
+    const keep = inRound;
+    renderHand($('dealer-cards'), inRound ? s.dealer : null, keep);
+    renderHand($('player-cards'), inRound ? s.player : null, keep);
+    $('dealer-total').textContent = inRound ? (s.dealer.holeHidden ? 'shows ' + s.dealer.total : s.dealer.total) : '';
+    $('player-total').textContent = inRound ? s.player.total : '';
+    const chip = $('bet-chip');
+    chip.hidden = !(inRound && s.bet > 0);
+    chip.textContent = 'bet ' + money(s.bet);
+    $('table-rule').textContent = s.phase === 'DEPOSIT' ? 'Deposit to sit down' : 'Dealer stands on 17 · Blackjack pays 3:2';
+
+    $('balance').textContent = money(s.balance);
+    const roundShown = s.phase === 'BETTING' ? s.round + 1 : (s.round || '–');
+    $('round').textContent = s.phase === 'DEPOSIT' ? '–' : roundShown;
+    $('record').textContent = s.wins + '–' + s.losses;
+
+    const msg = $('message');
+    msg.className = 'message';
+    if (s.message) { msg.textContent = s.message; msg.classList.add('reject'); }
+    else if (s.outcome && (s.phase === 'ROUND_OVER' || s.phase === 'OVER')) {
+      const text = { BLACKJACK: 'Blackjack! Paid 3 to 2: ', WIN: 'You win ', PUSH: 'Push. Bet returned', LOSS: 'Dealer wins. You lose ', BUST: 'Bust. You lose ' }[s.outcome];
+      msg.textContent = text + (s.outcome === 'PUSH' ? '' : money(Math.abs(s.net))) + (s.phase === 'OVER' && s.balance === 0 ? '. You are out of money.' : '.');
+      msg.classList.add(s.net > 0 ? 'win' : s.net < 0 ? 'loss' : '');
+    } else if (s.phase === 'BETTING' && s.shoe && s.shoe.shuffled) {
+      msg.textContent = 'Fewer than ' + s.cutCard + ' cards were left: a new shoe has been shuffled.';
+    } else if (s.phase === 'OVER') {
+      msg.textContent = 'Thanks for playing.';
+    } else msg.textContent = '';
+
+    renderControls(s);
+  }
+
+  function renderControls(s) {
+    const c = $('controls');
+    clear(c);
+    const amountForm = (label, button, submit, initial) => {
+      const form = el('form', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap' });
+      form.appendChild(el('label', { for: 'amount' }, label));
+      const input = el('input', { type: 'number', id: 'amount', step: '1', min: '1', value: initial });
+      form.appendChild(input);
+      form.appendChild(el('button', { class: 'primary', type: 'submit' }, button));
+      form.addEventListener('submit', e => { e.preventDefault(); submit(input.value); });
+      c.appendChild(form);
+      setTimeout(() => { input.focus(); input.select(); }, 0);
+    };
+    if (s.phase === 'DEPOSIT') {
+      amountForm('Deposit (whole dollars)', 'Deposit', v => move('deposit', v), 100);
+    } else if (s.phase === 'BETTING') {
+      amountForm('Bet', 'Deal', v => move('bet', v), s.advice.suggested);
+      const useSuggested = el('button', { type: 'button' }, 'Bet the suggested ' + money(s.advice.suggested));
+      useSuggested.addEventListener('click', () => move('bet', s.advice.suggested));
+      c.appendChild(useSuggested);
+      const quit = el('button', { type: 'button' }, 'Leave the table');
+      quit.addEventListener('click', () => move('quit'));
+      c.appendChild(quit);
+    } else if (s.phase === 'PLAYER_TURN') {
+      const hit = el('button', { class: 'primary', type: 'button' }, 'Hit');
+      hit.addEventListener('click', () => move('hit'));
+      const stand = el('button', { type: 'button' }, 'Stand');
+      stand.addEventListener('click', () => move('stand'));
+      c.appendChild(hit); c.appendChild(stand);
+    } else if (s.phase === 'ROUND_OVER') {
+      const next = el('button', { class: 'primary', type: 'button' }, 'Play another round');
+      next.addEventListener('click', () => move('next'));
+      const quit = el('button', { type: 'button' }, 'Leave the table');
+      quit.addEventListener('click', () => move('quit'));
+      c.appendChild(next); c.appendChild(quit);
+    } else if (s.phase === 'OVER') {
+      const again = el('button', { class: 'primary', type: 'button' }, 'New session');
+      again.addEventListener('click', () => move('restart'));
+      c.appendChild(again);
+    }
+    document.onkeydown = e => {
+      if (e.target.tagName === 'INPUT') return;
+      if (s.phase === 'PLAYER_TURN' && (e.key === 'h' || e.key === 'H')) move('hit');
+      if (s.phase === 'PLAYER_TURN' && (e.key === 's' || e.key === 'S')) move('stand');
+      if (s.phase === 'ROUND_OVER' && (e.key === 'Enter' || e.key === 'y')) move('next');
+    };
+  }
+
+  // ---------------------------------------------------------------- shoe
+  function renderShoe(s) {
+    const fill = $('shoe-fill'), cut = $('shoe-cut');
+    if (!s.shoe) { $('shoe-text').textContent = 'No shoe yet'; fill.style.width = '0'; cut.style.left = '0'; clear($('rank-chart')); return; }
+    $('shoe-text').textContent = s.shoe.remaining + ' of ' + s.shoe.total + ' cards left, ' + s.shoe.seen + ' seen. Reshuffle below ' + s.cutCard + '.';
+    fill.style.width = (100 * s.shoe.remaining / s.shoe.total) + '%';
+    cut.style.left = (100 * s.cutCard / s.shoe.total) + '%';
+
+    const svg = $('rank-chart'); clear(svg);
+    const W = 520, H = 150, left = 36, right = 10, top = 14, bottom = 26;
+    const labels = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10s'];
+    const fresh = r => (r === 10 ? 16 : 4) * s.decks;
+    const n = s.shoe.unseenByRank;
+    const max = fresh(10);
+    const x = i => left + i * (W - left - right) / 10;
+    const bw = (W - left - right) / 10 - 6;
+    const y = v => top + (H - top - bottom) * (1 - v / max);
+    [0, 0.5, 1].forEach(t => {
+      svg.appendChild(svgEl('line', { x1: left, x2: W - right, y1: y(t * max), y2: y(t * max), class: t ? 'grid' : 'axis' }));
+      svg.appendChild(svgEl('text', { x: left - 6, y: y(t * max) + 4, 'text-anchor': 'end' }, Math.round(t * max)));
+    });
+    for (let r = 1; r <= 10; r++) {
+      const i = r - 1, full = fresh(r), left_ = n[r];
+      const ghost = svgEl('rect', { x: x(i) + 3, y: y(full), width: bw, height: y(0) - y(full), rx: 3, fill: 'none', stroke: 'var(--border)' });
+      svg.appendChild(ghost);
+      const bar = svgEl('rect', { x: x(i) + 3, y: y(left_), width: bw, height: Math.max(0, y(0) - y(left_)), rx: 3, class: 'bar' });
+      svg.appendChild(bar);
+      svg.appendChild(svgEl('text', { x: x(i) + 3 + bw / 2, y: H - 8, 'text-anchor': 'middle' }, labels[i]));
+      svg.appendChild(svgEl('text', { x: x(i) + 3 + bw / 2, y: y(left_) - 4, 'text-anchor': 'middle', class: 'label' }, left_));
+      hover(bar, () => labels[i] + ': ' + left_ + ' of ' + full + ' unseen (' + (full - left_) + ' dealt)');
+    }
+  }
+
+  // ---------------------------------------------------------------- advice
+  function renderAdvice(s) {
+    const a = s.advice;
+    $('advice-empty').hidden = !!a;
+    $('advice').hidden = !a;
+    if (!a) { clear($('pmf-chart')); clear($('kelly-chart')); clear($('pdf-chart')); $('pdf-note').textContent = ''; return; }
+    const p = a.chances;
+    $('edge').textContent = cents(a.edge);
+    $('variance').textContent = a.variance.toFixed(4);
+    $('fraction').textContent = (a.fraction >= 0 ? '' : '−') + Math.abs(a.fraction * 100).toFixed(2) + '%';
+    $('suggested').textContent = money(a.suggested);
+    $('suggested-why').textContent = a.edge > 0 ? 'floor(fraction × balance), at least ' + money(s.minimumBet) : 'the minimum: the cards favour the dealer';
+
+    const steps = $('steps'); clear(steps);
+    const li = html => { const node = el('li'); node.innerHTML = html; steps.appendChild(node); };
+    li('<b>Row 11</b> &nbsp;P(blackjack) = ' + pct(p[0]) + ', P(win) = ' + pct(p[1]) + ', P(push) = ' + pct(p[2]) + ', P(loss) = ' + pct(p[3]));
+    li('<b>Row 10</b> &nbsp;<code>E = 1.5·' + p[0].toFixed(4) + ' + ' + p[1].toFixed(4) + ' − ' + p[3].toFixed(4) + ' = ' + a.edge.toFixed(4) + '</code>');
+    li('<b>Row 12</b> &nbsp;<code>σ² = Σ P(w)·(w − E)² = ' + a.variance.toFixed(4) + '</code>');
+    li('<b>Row 13</b> &nbsp;<code>f* = E / σ² = ' + a.fraction.toFixed(4) + '</code>' +
+      (a.edge > 0 ? '; bet = floor(' + a.fraction.toFixed(4) + ' × ' + money(s.balance) + ') = ' + money(a.suggested)
+                  : '; E ≤ 0, so bet the table minimum of ' + money(s.minimumBet)));
+
+    renderPmf(p, a);
+    renderKelly(p, a);
+    renderPdf(s, a);
+  }
+
+  // Probability mass of W: four bars on a per-dollar axis.
+  function renderPmf(p, a) {
+    const svg = $('pmf-chart'); clear(svg);
+    const W = 520, H = 190, left = 40, right = 14, top = 18, bottom = 34;
+    const x = w => left + (W - left - right) * (w + 1.25) / 3.0;   // -1.25 .. 1.75
+    const max = Math.max(...p) * 1.15;
+    const y = v => top + (H - top - bottom) * (1 - v / max);
+    [0, 0.25, 0.5].forEach(t => { if (t <= max) {
+      svg.appendChild(svgEl('line', { x1: left, x2: W - right, y1: y(t), y2: y(t), class: t ? 'grid' : 'axis' }));
+      svg.appendChild(svgEl('text', { x: left - 6, y: y(t) + 4, 'text-anchor': 'end' }, pct(t)));
+    } });
+    const bw = 44;
+    PAYOUT.forEach((w, i) => {
+      const bar = svgEl('rect', { x: x(w) - bw / 2, y: y(p[i]), width: bw, height: y(0) - y(p[i]), rx: 4, class: 'bar' });
+      svg.appendChild(bar);
+      svg.appendChild(svgEl('text', { x: x(w), y: y(p[i]) - 5, 'text-anchor': 'middle', class: 'label' }, pct(p[i])));
+      svg.appendChild(svgEl('text', { x: x(w), y: H - 18, 'text-anchor': 'middle' }, (w > 0 ? '+' : '') + w));
+      svg.appendChild(svgEl('text', { x: x(w), y: H - 6, 'text-anchor': 'middle' }, RESULT[i]));
+      hover(bar, () => RESULT[i] + ': ' + pct(p[i]) + ' chance, pays ' + (w > 0 ? '+' : '') + w + ' per dollar');
+    });
+    // The expected value, as a guide line on the same axis.
+    svg.appendChild(svgEl('line', { x1: x(a.edge), x2: x(a.edge), y1: top, y2: y(0), class: 'guide' }));
+    svg.appendChild(svgEl('text', { x: x(a.edge) + (a.edge >= 0 ? 5 : -5), y: top + 10, 'text-anchor': a.edge >= 0 ? 'start' : 'end' }, 'E = ' + a.edge.toFixed(4)));
+  }
+
+  // Expected log growth per round, G(f) = sum p_i ln(1 + f w_i), for f in [0, 1).
+  function growth(p, f) { let g = 0; for (let i = 0; i < 4; i++) g += p[i] * Math.log(1 + f * PAYOUT[i]); return g; }
+  function renderKelly(p, a) {
+    const svg = $('kelly-chart'); clear(svg);
+    const W = 520, H = 210, left = 54, right = 14, top = 18, bottom = 34;
+    const approx = Math.max(0, a.fraction);
+    // Exact Kelly: grid search, then refine.
+    let best = 0, bestG = growth(p, 0);
+    for (let f = 0; f < 0.999; f += 0.001) { const g = growth(p, f); if (g > bestG) { bestG = g; best = f; } }
+    const fMax = Math.min(0.999, Math.max(0.03, 2.5 * Math.max(approx, best), 0.03));
+    const pts = []; const N = 160;
+    for (let i = 0; i <= N; i++) { const f = fMax * i / N; pts.push([f, growth(p, f)]); }
+    const gs = pts.map(q => q[1]);
+    let gMin = Math.min(...gs), gMax = Math.max(...gs, 0);
+    if (gMax - gMin < 1e-9) { gMax = gMin + 1e-6; }
+    const pad = (gMax - gMin) * 0.15; gMin -= pad; gMax += pad;
+    const x = f => left + (W - left - right) * f / fMax;
+    const y = g => top + (H - top - bottom) * (1 - (g - gMin) / (gMax - gMin));
+    // axes
+    svg.appendChild(svgEl('line', { x1: left, x2: W - right, y1: y(0), y2: y(0), class: 'axis' }));
+    svg.appendChild(svgEl('text', { x: left - 6, y: y(0) + 4, 'text-anchor': 'end' }, '0'));
+    [gMax - pad, gMin + pad].forEach(g => { if (Math.abs(g) > 1e-9) {
+      svg.appendChild(svgEl('line', { x1: left, x2: W - right, y1: y(g), y2: y(g), class: 'grid' }));
+      svg.appendChild(svgEl('text', { x: left - 6, y: y(g) + 4, 'text-anchor': 'end' }, (g * 100).toFixed(2) + '%'));
+    } });
+    [0, 0.25, 0.5, 0.75, 1].forEach(t => svg.appendChild(svgEl('text', { x: x(t * fMax), y: H - 16, 'text-anchor': t === 0 ? 'start' : t === 1 ? 'end' : 'middle' }, (t * fMax * 100).toFixed(1) + '%')));
+    svg.appendChild(svgEl('text', { x: (left + W - right) / 2, y: H - 4, 'text-anchor': 'middle' }, 'fraction of bankroll bet each round'));
+    svg.appendChild(svgEl('text', { x: left, y: 10, 'text-anchor': 'start' }, 'expected log growth per round'));
+    // curve
+    svg.appendChild(svgEl('path', { d: pts.map((q, i) => (i ? 'L' : 'M') + x(q[0]).toFixed(1) + ' ' + y(q[1]).toFixed(1)).join(' '), class: 'line' }));
+    // markers
+    svg.appendChild(svgEl('line', { x1: x(approx), x2: x(approx), y1: y(growth(p, approx)), y2: y(0), class: 'guide' }));
+    svg.appendChild(svgEl('circle', { cx: x(approx), cy: y(growth(p, approx)), r: 5, class: 'mark1' }));
+    svg.appendChild(svgEl('circle', { cx: x(best), cy: y(bestG), r: 5, class: 'mark2' }));
+    if (a.edge <= 0) {
+      // Both answers sit at zero: the curve only falls, so no bet grows the bankroll.
+      svg.appendChild(svgEl('text', { x: left + 8, y: H - bottom - 22, 'text-anchor': 'start', class: 'label' },
+        'E/σ² = ' + (a.fraction * 100).toFixed(2) + '% < 0, exact maximum at 0%'));
+      svg.appendChild(svgEl('text', { x: left + 8, y: H - bottom - 8, 'text-anchor': 'start' },
+        'the curve only falls: no bet grows the bankroll, so bet the minimum'));
+    } else {
+      const near = Math.abs(x(approx) - x(best)) < 40;
+      svg.appendChild(svgEl('text', { x: x(approx), y: y(growth(p, approx)) + (near ? 16 : -9), 'text-anchor': 'middle', class: 'label' }, 'E/σ² = ' + (approx * 100).toFixed(2) + '%'));
+      svg.appendChild(svgEl('text', { x: x(best), y: y(bestG) - 9, 'text-anchor': 'middle' }, 'exact ' + (best * 100).toFixed(2) + '%'));
+    }
+    // crosshair hover
+    const hit = svgEl('rect', { x: left, y: top, width: W - left - right, height: H - top - bottom, fill: 'transparent' });
+    svg.appendChild(hit);
+    const cross = svgEl('line', { x1: 0, x2: 0, y1: top, y2: H - bottom, class: 'guide', style: 'display:none' });
+    svg.appendChild(cross);
+    hit.addEventListener('mousemove', e => {
+      const box = svg.getBoundingClientRect();
+      const f = Math.max(0, Math.min(fMax, (e.clientX - box.left) * (W / box.width) - left) / (W - left - right) * fMax);
+      cross.setAttribute('x1', x(f)); cross.setAttribute('x2', x(f)); cross.style.display = '';
+      tooltip.textContent = 'bet ' + (f * 100).toFixed(2) + '% of bankroll: growth ' + (growth(p, f) * 100).toFixed(3) + '% per round';
+      tooltip.style.display = 'block'; tooltip.style.left = (e.clientX + 14) + 'px'; tooltip.style.top = (e.clientY + 14) + 'px';
+    });
+    hit.addEventListener('mouseleave', () => { cross.style.display = 'none'; tooltip.style.display = 'none'; });
+  }
+
+  // Normal approximation to the balance after n rounds of the suggested bet,
+  // mean B + n·bet·E, standard deviation sqrt(n)·bet·sigma. It assumes the
+  // bet and the odds stay fixed, which is only true until the next card.
+  function renderPdf(s, a) {
+    const svg = $('pdf-chart'); clear(svg);
+    const bet = a.suggested, n = nRounds, B = s.balance;
+    const mean = B + n * bet * a.edge, sd = Math.sqrt(n) * bet * Math.sqrt(a.variance);
+    $('n-label').textContent = n;
+    const W = 520, H = 190, left = 14, right = 14, top = 18, bottom = 34;
+    const lo = mean - 3.5 * sd, hi = mean + 3.5 * sd;
+    const x = v => left + (W - left - right) * (v - lo) / (hi - lo);
+    const pdf = v => Math.exp(-0.5 * ((v - mean) / sd) ** 2) / (sd * Math.sqrt(2 * Math.PI));
+    const peak = pdf(mean);
+    const y = d => top + (H - top - bottom) * (1 - d / (peak * 1.1));
+    const pts = []; const N = 160;
+    for (let i = 0; i <= N; i++) { const v = lo + (hi - lo) * i / N; pts.push([v, pdf(v)]); }
+    const path = pts.map((q, i) => (i ? 'L' : 'M') + x(q[0]).toFixed(1) + ' ' + y(q[1]).toFixed(1)).join(' ');
+    svg.appendChild(svgEl('path', { d: path + ' L' + x(hi).toFixed(1) + ' ' + y(0) + ' L' + x(lo).toFixed(1) + ' ' + y(0) + ' Z', class: 'area' }));
+    svg.appendChild(svgEl('path', { d: path, class: 'line' }));
+    svg.appendChild(svgEl('line', { x1: left, x2: W - right, y1: y(0), y2: y(0), class: 'axis' }));
+    // starting balance and mean as guides
+    [[B, 'now ' + money(B)], [mean, 'mean ' + money(Math.round(mean))]].forEach(([v, label], i) => {
+      if (v < lo || v > hi) return;
+      svg.appendChild(svgEl('line', { x1: x(v), x2: x(v), y1: top + 14, y2: y(0), class: 'guide' }));
+      svg.appendChild(svgEl('text', { x: x(v), y: top + 10 + i * 0, 'text-anchor': i === 0 && mean > B ? 'end' : i === 0 ? 'start' : mean > B ? 'start' : 'end', class: i ? 'label' : '' }, ' ' + label + ' '));
+    });
+    [-2, -1, 0, 1, 2].forEach(k => {
+      const v = mean + k * sd;
+      svg.appendChild(svgEl('text', { x: x(v), y: H - 16, 'text-anchor': 'middle' }, money(Math.round(v))));
+      svg.appendChild(svgEl('text', { x: x(v), y: H - 5, 'text-anchor': 'middle' }, k === 0 ? 'mean' : (k > 0 ? '+' : '') + k + 'σ'));
+    });
+    // crosshair with the running chance of being at or below the cursor
+    const hit = svgEl('rect', { x: left, y: top, width: W - left - right, height: H - top - bottom, fill: 'transparent' });
+    svg.appendChild(hit);
+    const cross = svgEl('line', { x1: 0, x2: 0, y1: top, y2: H - bottom, class: 'guide', style: 'display:none' });
+    svg.appendChild(cross);
+    const cdf = v => 0.5 * (1 + erf((v - mean) / (sd * Math.SQRT2)));
+    hit.addEventListener('mousemove', e => {
+      const box = svg.getBoundingClientRect();
+      const v = lo + (hi - lo) * ((e.clientX - box.left) * (W / box.width) - left) / (W - left - right);
+      cross.setAttribute('x1', x(v)); cross.setAttribute('x2', x(v)); cross.style.display = '';
+      tooltip.textContent = money(Math.round(v)) + ': ' + pct(cdf(v)) + ' chance of finishing at or below this';
+      tooltip.style.display = 'block'; tooltip.style.left = (e.clientX + 14) + 'px'; tooltip.style.top = (e.clientY + 14) + 'px';
+    });
+    hit.addEventListener('mouseleave', () => { cross.style.display = 'none'; tooltip.style.display = 'none'; });
+    const bust = cdf(0);
+    $('pdf-note').textContent = 'Betting ' + money(bet) + ' a round for ' + n + ' rounds at today’s odds: mean ' + money(Math.round(mean)) +
+      ', standard deviation ' + money(Math.round(sd)) + '. Chance of being below zero on this curve: ' + pct(bust) +
+      '. The curve holds the bet and the odds fixed; the real game changes both every card.';
+  }
+  function erf(z) {
+    const t = 1 / (1 + 0.3275911 * Math.abs(z));
+    const poly = t * (0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429))));
+    const r = 1 - poly * Math.exp(-z * z);
+    return z >= 0 ? r : -r;
+  }
+
+  // ---------------------------------------------------------------- history
+  function renderHistory(s) {
+    const body = $('history').querySelector('tbody'); clear(body);
+    s.history.forEach(r => {
+      const tr = el('tr');
+      tr.appendChild(el('td', { class: 'num' }, r.round));
+      tr.appendChild(el('td', { class: 'outcome-' + r.outcome }, r.outcome));
+      tr.appendChild(el('td', { class: 'r num' }, money(r.bet)));
+      tr.appendChild(el('td', { class: 'r num' }, (r.net >= 0 ? '+' : '') + money(r.net)));
+      body.appendChild(tr);
+    });
+    $('history-note').textContent = s.history.length ? '· win rate ' + pct(s.winRate) + ', most recent first' : '· none yet';
+    const dealt = $('dealt'); clear(dealt);
+    s.cardsDealt.forEach(c => dealt.appendChild(el('span', { class: RED[c.suit] ? 'red' : '' }, c.rank + SUIT[c.suit])));
+  }
+
+  function render() {
+    if (!state) return;
+    renderTable(state);
+    renderShoe(state);
+    renderAdvice(state);
+    renderHistory(state);
+  }
+
+  $('n-rounds').addEventListener('input', e => { nRounds = +e.target.value; if (state && state.advice) renderPdf(state, state.advice); });
+  call('/api/state', 'GET').catch(() => {
+    $('message').textContent = 'Cannot reach the game. Start it with: java -cp out WebGame';
+    $('message').classList.add('reject');
+  });
+})();
+</script>
+</body>
+</html>

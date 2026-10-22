@@ -285,17 +285,17 @@
   function renderHand(container, hand, keep) {
     // Only append cards the seat does not show yet, so the deal animation
     // runs once per card instead of on every refresh.
+    // The face-down card is not one of hand.cards, so it is removed before
+    // counting; otherwise it fills the slot the revealed hole card needs.
     const cards = hand ? hand.cards : [];
-    const want = cards.length + (hand && hand.holeHidden ? 1 : 0);
-    if (!keep || container.childElementCount > want) clear(container);
-    const have = container.childElementCount;
-    cards.forEach((card, i) => { if (i >= have) container.appendChild(cardNode(card)); });
-    if (hand && hand.holeHidden) {
-      if (!container.querySelector('.back')) container.appendChild(el('div', { class: 'card back', title: 'face down' }));
-    } else {
-      const back = container.querySelector('.back');
-      if (back) back.remove();
-    }
+    const hidden = !!(hand && hand.holeHidden);
+    const back = container.querySelector('.back');
+    if (back && !hidden) back.remove();
+    const faceUp = () => container.querySelectorAll('.card:not(.back)').length;
+    if (!keep || faceUp() > cards.length) clear(container);
+    const have = faceUp();
+    cards.forEach((card, i) => { if (i >= have) container.insertBefore(cardNode(card), container.querySelector('.back')); });
+    if (hidden && !container.querySelector('.back')) container.appendChild(el('div', { class: 'card back', title: 'face down' }));
   }
 
   // ---------------------------------------------------------------- the table

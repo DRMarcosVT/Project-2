@@ -629,6 +629,10 @@ public class WebGame
                 case "quit":
                     quit();
                     break;
+                case "restart":
+                    // start() already swapped in a fresh session; this
+                    // game is that session, so there is nothing to apply.
+                    break;
                 default:
                     message = "Unknown move: " + move;
             }

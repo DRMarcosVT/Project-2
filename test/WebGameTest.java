@@ -497,6 +497,7 @@ public class WebGameTest
             String fresh = request(server, "POST", "/api/restart");
             assertEquals("DEPOSIT", fieldOf(fresh, "phase"));
             assertEquals("0", fieldOf(fresh, "balance"));
+            assertEquals("", fieldOf(fresh, "message"));
         }
         finally
         {

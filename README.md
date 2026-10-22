@@ -2,7 +2,7 @@
 
 CS 2114 Project 2, Deliverable 4: Final Build and Presentation.
 
-Recorded team members: David, Marcos, Nath, Madeline. Earlier attribution also names Shreyas; the team must confirm the roster. The October 22 final-build fixes below are attributed to David, as confirmed for this update.
+Team members: David, Marcos, Nath, Madeline, Shreyas. The October 22 final-build fixes below are attributed to David, as confirmed for this update.
 
 ## Run the MVP
 

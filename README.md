@@ -340,5 +340,5 @@ For the October 22 final-build fixes, David authorized an AI assistant to implem
 | `test/WebControlsTest.cjs` | David: Push/win/loss rendering regression, AI-assisted; run with Node.js. |
 | `Docs/system-diagram.mmd` | David: final implementation diagram, AI-assisted. |
 | `Docs/system-diagram.png` | David: updated diagram image, AI-assisted; visually inspected by the assistant. |
-| `blackjack-expected-return-model.md` | AI-drafted under Marcos's direction. |
+| `blackjack-expected-return-model.md` | AI-drafted under Marcos's direction; reviewed by Marcos. |
 | `README.md` | David: final-build documentation and attribution-table update, AI-assisted; earlier contributor records preserved. |

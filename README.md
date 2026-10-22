@@ -304,7 +304,7 @@ Every source file was drafted by Marcos from `Docs/Updated Spec.docx`, `Docs/Pro
 
 The earlier attribution records most Java tests as AI-drafted and reviewed by Marcos and David Moon; `LinkedChainTest` is attributed to David Moon. The suite includes normal, invalid-input, and boundary cases. No instrumented branch-coverage measurement has been made, so we do not claim every branch is covered.
 
-For the October 22 final-build fixes, David authorized an AI assistant to implement the Push rendering correction, public-state hole-card filtering, balance-limit session handling, actual-rank validation in the counter, server-port validation, regression tests, and documentation/diagram updates. The assistant ran Java 17 compilation, the full JUnit suite, and the focused Node rendering regression. David is credited as the contributor for these changes; this does not assert that David manually reviewed every new line or that a full browser smoke test was performed.
+For the October 22 final-build fixes, David authorized an AI assistant to implement the Push rendering correction, public-state hole-card filtering, balance-limit session handling, actual-rank validation in the counter, server-port validation, regression tests, and documentation/diagram updates. The assistant ran Java 17 compilation, the full JUnit suite, and the focused Node rendering regression. David is credited as the contributor for these changes. Marcos reviewed the October 22 changes to `WebGame`, `web/index.html`, `CardCounter` and `Game`; David reviewed the October 22 test changes. This does not assert that a full browser smoke test was performed.
 
 | File | Contributor(s) and role |
 |---|---|
@@ -320,11 +320,11 @@ For the October 22 final-build fixes, David authorized an AI assistant to implem
 | `src/Bankroll.java` | drafted by Marcos; overflow checks added by David Moon; reviewed by Shreyas. |
 | `src/GameHistory.java` | drafted by Marcos; reviewed by Shreyas. |
 | `src/CardHistory.java` | drafted by Marcos; reviewed by Shreyas. |
-| `src/CardCounter.java` | model drafted and coded by Marcos with genAI assistance; worked-example numbers checked by running the code; reviewed by Shreyas. `resultChances()` added on October 15 for the web table, genAI-assisted. David: final-build actual-rank validation, AI-assisted. |
+| `src/CardCounter.java` | model drafted and coded by Marcos with genAI assistance; worked-example numbers checked by running the code; reviewed by Shreyas. `resultChances()` added on October 15 for the web table, genAI-assisted. David: final-build actual-rank validation, AI-assisted; reviewed by Marcos. |
 | `src/WebGame.java` | drafted by Marcos with genAI assistance on October 15; checked by playing rounds in a browser; reviewed by Marcos, including the October 22 changes. David: final-build public-state privacy, balance-limit handling and port validation, AI-assisted. |
 | `web/index.html` | drafted by Marcos with genAI assistance on October 15; charts checked against the counter's printed numbers; reviewed by Marcos, including the October 22 changes. David: Push rendering fix, AI-assisted. |
 | `src/ConsoleUI.java` | drafted by Marcos; `InputEndedException` added by David Moon; reviewed by David Moon. |
-| `src/Game.java` | drafted by Marcos; end-of-input handling, dealer blackjack and auto-stand added by David Moon; reviewed by David Moon. David: final-build balance-limit handling, AI-assisted. |
+| `src/Game.java` | drafted by Marcos; end-of-input handling, dealer blackjack and auto-stand added by David Moon; reviewed by David Moon. David: final-build balance-limit handling, AI-assisted; reviewed by Marcos. |
 | `test/CardTest.java` | AI-drafted; extended and reviewed by David Moon; reviewed by Marcos; run. |
 | `test/RoundResultTest.java` | AI-drafted; extended and reviewed by David Moon; reviewed by Marcos; run. |
 | `test/ShoeTest.java` | AI-drafted; reviewed by Marcos and David Moon; run. |
@@ -332,12 +332,12 @@ For the October 22 final-build fixes, David authorized an AI assistant to implem
 | `test/BankrollTest.java` | AI-drafted; extended and reviewed by David Moon; reviewed by Marcos; run. |
 | `test/GameHistoryTest.java` | AI-drafted; reviewed by Marcos and David Moon; run. |
 | `test/CardHistoryTest.java` | AI-drafted; reviewed by Marcos and David Moon; run. |
-| `test/CardCounterTest.java` | AI-drafted; extended and reviewed by David Moon; reviewed by Marcos; run. David: exhausted-face-rank regressions, AI-assisted. |
+| `test/CardCounterTest.java` | AI-drafted; extended and reviewed by David Moon; reviewed by Marcos; run. David: exhausted-face-rank regressions, AI-assisted; reviewed by David. |
 | `test/ConsoleUITest.java` | AI-drafted; extended and reviewed by David Moon; reviewed by Marcos; run. |
-| `test/GameTest.java` | AI-drafted, seeds 1 and 2 chosen by running the game; extended and reviewed by David Moon; reviewed by Marcos; run. David: balance-limit regressions, AI-assisted. |
+| `test/GameTest.java` | AI-drafted, seeds 1 and 2 chosen by running the game; extended and reviewed by David Moon; reviewed by Marcos; run. David: balance-limit regressions, AI-assisted; reviewed by David. |
 | `test/LinkedChainTest.java` | written by David Moon; reviewed by Marcos; run. |
-| `test/WebGameTest.java` | AI-drafted, seeds 3, 16 and 20 chosen by running the game; reviewed by Marcos; run. David: hidden-card privacy, balance-limit, port-validation and web-rule regressions, AI-assisted. |
-| `test/WebControlsTest.cjs` | David: Push/win/loss rendering regression, AI-assisted; run with Node.js. |
+| `test/WebGameTest.java` | AI-drafted, seeds 3, 16 and 20 chosen by running the game; reviewed by Marcos; run. David: hidden-card privacy, balance-limit, port-validation and web-rule regressions, AI-assisted; reviewed by David. |
+| `test/WebControlsTest.cjs` | David: Push/win/loss rendering regression, AI-assisted; reviewed by David; run with Node.js. |
 | `Docs/system-diagram.mmd` | David: final implementation diagram, AI-assisted. |
 | `Docs/system-diagram.png` | David: updated diagram image, AI-assisted; visually inspected by the assistant. |
 | `blackjack-expected-return-model.md` | AI-drafted under Marcos's direction; reviewed by Marcos. |

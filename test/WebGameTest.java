@@ -197,6 +197,21 @@ public class WebGameTest
         assertEquals("1", fieldOf(json, "losses"));
     }
 
+    @Test
+    public void hitToTwentyOneAutomaticallyStandsAndSettles()
+    {
+        WebGame game = dealt(0); // 7C + 10C, then 4H; dealer goes bust.
+        game.hit();
+        assertEquals(WebGame.Phase.ROUND_OVER, game.phase());
+        String json = game.stateJson();
+        assertTrue(json.contains("\"total\":21,"));
+        assertTrue(json.contains("\"holeHidden\":false"));
+        assertEquals("WIN", fieldOf(json, "outcome"));
+        assertEquals("110", fieldOf(json, "balance"));
+        assertThrows(IllegalStateException.class, game::hit);
+        assertThrows(IllegalStateException.class, game::stand);
+    }
+
     // ---- stand() ----
 
     /** Normal: seed 1 wins on a stand and the dealer's hand is revealed. */
@@ -233,6 +248,40 @@ public class WebGameTest
         assertEquals(WebGame.Phase.OVER, game.phase());
         assertEquals("0", fieldOf(game.stateJson(), "balance"));
         assertThrows(IllegalStateException.class, game::nextRound);
+    }
+
+    @Test
+    public void standPushReturnsBetAndAllowsNextRound()
+    {
+        WebGame game = dealt(0); // Player 17, dealer draws to 17.
+        game.stand();
+        assertEquals(WebGame.Phase.ROUND_OVER, game.phase());
+        String json = game.stateJson();
+        assertEquals("PUSH", fieldOf(json, "outcome"));
+        assertEquals("0", fieldOf(json, "net"));
+        assertEquals("100", fieldOf(json, "balance"));
+        assertEquals("0", fieldOf(json, "wins"));
+        assertEquals("0", fieldOf(json, "losses"));
+        assertTrue(json.contains("\"history\":[{\"round\":1,\"outcome\":\"PUSH\",\"bet\":10,\"net\":0}]"));
+        assertThrows(IllegalStateException.class, game::stand);
+        game.nextRound();
+        assertEquals(WebGame.Phase.BETTING, game.phase());
+        assertEquals("100", fieldOf(game.stateJson(), "balance"));
+        assertEquals("0", fieldOf(game.stateJson(), "bet"));
+    }
+
+    @Test
+    public void standKeepsDealerAtSoftSeventeen()
+    {
+        WebGame game = dealt(40); // Dealer 6D AS is soft 17.
+        game.stand();
+        String json = game.stateJson();
+        int start = json.indexOf("\"dealer\":{");
+        String dealer = json.substring(start, json.indexOf("\"outcome\":", start));
+        assertEquals(2, dealer.split("\"rank\"").length - 1);
+        assertTrue(dealer.contains("\"total\":17,"));
+        assertEquals("LOSS", fieldOf(json, "outcome"));
+        assertEquals("90", fieldOf(json, "balance"));
     }
 
     // ---- nextRound() ----
@@ -347,7 +396,66 @@ public class WebGameTest
         {
             sum += Integer.parseInt(n);
         }
-        assertEquals(152, sum);
+        assertEquals(153, sum, "the face-down card is still unseen by the player");
+    }
+
+    /** The hidden occurrence is excluded even when it equals a player's card. */
+    @Test
+    public void stateJsonHidesHoleFromHistoryAndCountsUntilSettlement()
+    {
+        WebGame game = dealt(1); // Player 6H 9D; dealer 4C and another 9D.
+        String json = game.stateJson();
+        String visible = json.substring(json.indexOf("\"cardsDealt\":"));
+        assertEquals(3, visible.split("\"rank\"").length - 1);
+        assertEquals(1, visible.split("\"rank\":\"9\"").length - 1);
+        assertEquals("3", fieldOf(json, "seen"));
+        assertTrue(json.contains("\"unseenByRank\":[0,12,12,12,11,12,11,12,12,11,48]"));
+
+        game.hit(); // An ace is added after the hole card in internal history.
+        json = game.stateJson();
+        visible = json.substring(json.indexOf("\"cardsDealt\":"));
+        assertEquals(4, visible.split("\"rank\"").length - 1);
+        assertEquals(1, visible.split("\"rank\":\"9\"").length - 1);
+        assertEquals("4", fieldOf(json, "seen"));
+        assertTrue(json.contains("\"unseenByRank\":[0,11,12,12,11,12,11,12,12,11,48]"));
+
+        game.stand();
+        json = game.stateJson();
+        assertTrue(json.contains("\"holeHidden\":false"));
+        int seen = Integer.parseInt(fieldOf(json, "seen"));
+        int remaining = Integer.parseInt(fieldOf(json, "remaining"));
+        assertEquals(156, seen + remaining);
+        visible = json.substring(json.indexOf("\"cardsDealt\":"));
+        assertEquals(seen, visible.split("\"rank\"").length - 1);
+        assertTrue(visible.split("\"rank\":\"9\"").length - 1 >= 2);
+    }
+
+    /** Reaching the money limit ends play instead of offering an impossible bet. */
+    @Test
+    public void depositAtBalanceLimitEndsSessionWithoutLosingMoney()
+    {
+        WebGame game = new WebGame(new Random(1));
+        game.deposit(Integer.MAX_VALUE);
+        assertEquals(WebGame.Phase.OVER, game.phase());
+        assertEquals("2147483647", fieldOf(game.stateJson(), "balance"));
+        assertTrue(game.stateJson().contains("Balance limit reached"));
+        assertThrows(IllegalStateException.class, () -> game.bet(1));
+    }
+
+    @Test
+    public void winningToBalanceLimitEndsSessionAndPreservesHistory()
+    {
+        WebGame game = new WebGame(new Random(1));
+        game.deposit(Integer.MAX_VALUE - 1);
+        game.bet(1);
+        game.stand();
+        assertEquals(WebGame.Phase.OVER, game.phase());
+        String json = game.stateJson();
+        assertEquals("2147483647", fieldOf(json, "balance"));
+        assertEquals("WIN", fieldOf(json, "outcome"));
+        assertTrue(json.contains("Balance limit reached"));
+        assertFalse(json.contains("\"history\":[]"));
+        assertThrows(IllegalStateException.class, game::nextRound);
     }
 
     // ---- start() ----
@@ -403,6 +511,8 @@ public class WebGameTest
         assertThrows(NullPointerException.class, () -> WebGame.start(null, 0));
         assertThrows(IllegalArgumentException.class,
             () -> WebGame.start(new WebGame(new Random(1)), -1));
+        assertThrows(IllegalArgumentException.class,
+            () -> WebGame.start(new WebGame(new Random(1)), 65536));
     }
 
     // ---- main() ----
@@ -451,5 +561,25 @@ public class WebGameTest
             System.setOut(original);
         }
         assertEquals("Usage: java -cp out WebGame [port]", printed.toString().trim());
+    }
+
+    @Test
+    public void mainRejectsOutOfRangePortsWithoutCrashing() throws IOException
+    {
+        PrintStream original = System.out;
+        try
+        {
+            for (String port : new String[] {"-1", "65536", "2147483648", ""})
+            {
+                ByteArrayOutputStream printed = new ByteArrayOutputStream();
+                System.setOut(new PrintStream(printed, true));
+                WebGame.main(new String[] {port});
+                assertEquals("Usage: java -cp out WebGame [port]", printed.toString().trim());
+            }
+        }
+        finally
+        {
+            System.setOut(original);
+        }
     }
 }

@@ -340,4 +340,25 @@ public class GameTest
         assertTrue(out.contains("Bet could exceed whole-dollar integer limit"), out);
         assertTrue(out.contains("Final balance: $2147483647"), out);
     }
+
+    @Test
+    public void runEndsAtMaximumDepositWithoutAskingForBet()
+    {
+        String out = play(1, "2147483647\n");
+        assertTrue(out.contains("Balance limit reached"), out);
+        assertTrue(out.contains("Final balance: $2147483647"), out);
+        assertFalse(out.contains("Bet: "), out);
+        assertFalse(out.contains("Input ended"), out);
+    }
+
+    @Test
+    public void runEndsAfterWinReachesBalanceLimit()
+    {
+        String out = play(1, "2147483646\n1\ns\n");
+        assertTrue(out.contains("Round 1: WIN"), out);
+        assertTrue(out.contains("Balance limit reached"), out);
+        assertTrue(out.contains("Final balance: $2147483647"), out);
+        assertFalse(out.contains("Play another round?"), out);
+        assertFalse(out.contains("Input ended"), out);
+    }
 }

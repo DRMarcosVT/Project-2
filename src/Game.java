@@ -97,7 +97,7 @@ public class Game
         newShoe();
 
         boolean playing = true;
-        while (playing)
+        while (playing && bankroll.balance() < Integer.MAX_VALUE)
         {
             if (shoe.needsShuffle())
             {
@@ -111,10 +111,14 @@ public class Game
                 ui.show("You are out of money.");
                 playing = false;
             }
-            else
+            else if (bankroll.balance() < Integer.MAX_VALUE)
             {
                 playing = ui.promptYesNo("Play another round? (y/n) ");
             }
+        }
+        if (bankroll.balance() == Integer.MAX_VALUE)
+        {
+            ui.show("Balance limit reached; session ended. Your balance is preserved.");
         }
         showHistory();
     }

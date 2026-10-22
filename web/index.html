@@ -322,7 +322,9 @@
     else if (s.outcome && (s.phase === 'ROUND_OVER' || s.phase === 'OVER')) {
       const text = { BLACKJACK: 'Blackjack! Paid 3 to 2: ', WIN: 'You win ', PUSH: 'Push. Bet returned', LOSS: 'Dealer wins. You lose ', BUST: 'Bust. You lose ' }[s.outcome];
       msg.textContent = text + (s.outcome === 'PUSH' ? '' : money(Math.abs(s.net))) + (s.phase === 'OVER' && s.balance === 0 ? '. You are out of money.' : '.');
-      msg.classList.add(s.net > 0 ? 'win' : s.net < 0 ? 'loss' : '');
+      if (s.net !== 0) {
+        msg.classList.add(s.net > 0 ? 'win' : 'loss');
+      }
     } else if (s.phase === 'BETTING' && s.shoe && s.shoe.shuffled) {
       msg.textContent = 'Fewer than ' + s.cutCard + ' cards were left: a new shoe has been shuffled.';
     } else if (s.phase === 'OVER') {
@@ -384,7 +386,8 @@
   function renderShoe(s) {
     const fill = $('shoe-fill'), cut = $('shoe-cut');
     if (!s.shoe) { $('shoe-text').textContent = 'No shoe yet'; fill.style.width = '0'; cut.style.left = '0'; clear($('rank-chart')); return; }
-    $('shoe-text').textContent = s.shoe.remaining + ' of ' + s.shoe.total + ' cards left, ' + s.shoe.seen + ' seen. Reshuffle below ' + s.cutCard + '.';
+    $('shoe-text').textContent = s.shoe.remaining + ' of ' + s.shoe.total + ' cards left, ' + s.shoe.seen + ' seen. Reshuffle below ' + s.cutCard + '.' +
+      (s.dealer && s.dealer.holeHidden ? ' One dealer card is face down and counted as unseen.' : '');
     fill.style.width = (100 * s.shoe.remaining / s.shoe.total) + '%';
     cut.style.left = (100 * s.cutCard / s.shoe.total) + '%';
 

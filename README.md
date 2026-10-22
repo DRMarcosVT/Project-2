@@ -1,8 +1,8 @@
 # Blackjack on a LinkedChain
 
-CS 2114 Project 2, Deliverable 3: the prototype and its tests.
+CS 2114 Project 2, Deliverable 4: Final Build and Presentation.
 
-Team members: David, Marcos, Nath, Madeline.
+Recorded team members: David, Marcos, Nath, Madeline. Earlier attribution also names Shreyas; the team must confirm the roster. The October 22 final-build fixes below are attributed to David, as confirmed for this update.
 
 ## Run the MVP
 
@@ -23,9 +23,15 @@ java -cp out WebGame
 
 A browser cannot run Java, so `WebGame.main` starts a small HTTP server on `http://127.0.0.1:8000/` (another port can be given as the only argument), opens it in the default browser, and serves `web/index.html`. The page draws the table, both hands and the shoe, and shows the card counter's working before every round: the four result chances of row 11, the arithmetic of rows 10, 12 and 13, the bankroll growth rate against the fraction bet (with the counter's E/σ² next to the exact Kelly maximum), and a normal curve for where the balance lands after a chosen number of rounds. Keys: `h` hit, `s` stand, Enter for the next round. Stop the server with Ctrl+C in the terminal. Run it from the project root, or the page returns 404 with the reason.
 
-A console Blackjack game. The player deposits money, bets, hits or stands against a dealer who stands on 17, and is paid 1:1 for a win and 3:2 for a blackjack. Three decks are shuffled into a shoe, every dealt card is tracked, and before each round a card counter reports the expected return of the next round and the Kelly bet that goes with it. All storage goes through the provided `LinkedChain<T>`, unchanged.
+A console Blackjack game. The player deposits money, bets, hits or stands against a dealer who stands on 17, and is paid 1:1 for a win and 3:2 for a blackjack. Three decks are shuffled into a shoe, every dealt card is tracked, and before each round a card counter reports the expected return of the next round and the Kelly bet that goes with it. The shoe and history stores use the provided `LinkedChain<T>`, unchanged; hands use an `ArrayList` and the counter uses memoization maps.
 
-The specification is `Docs/Updated Spec.docx`. The card-counting maths is `blackjack-expected-return-model.md`. The rubric is `Docs/Prototype-Rubric.md`.
+The authoritative specification is [Updated Spec.docx](Docs/Updated%20Spec.docx). The [card-counting model](blackjack-expected-return-model.md) explains the mathematics. [Prototype-Rubric.md](Docs/Prototype-Rubric.md) is the earlier D3 rubric; a D4 rubric is not included here. `Docs/Spec.md`, `Docs/Spec.docx`, and `Docs/class-diagram.*` are historical design drafts, not the final implementation.
+
+## System design
+
+![Final system diagram](Docs/system-diagram.png)
+
+[Diagram source](Docs/system-diagram.mmd). Each session has five chain instances storing three types: `Card`, `RoundResult`, and `String`. Application classes call the chain through its public API; its nodes remain private.
 
 ## How to run the tests
 
@@ -35,7 +41,15 @@ After the compile command above, from the same PowerShell window:
 java -jar lib/junit-platform-console-standalone-1.10.2.jar execute -cp out --scan-classpath
 ```
 
-It prints a summary ending in `148 tests successful, 0 tests failed` and takes about a minute because the card counter runs inside several tests. The same commands work unchanged in cmd and bash.
+The Java 17 final-build verification ran 159 JUnit tests with zero failures. Runtime varies because several tests calculate card-counting advice; the pre-fix 148-test audit took 82 seconds. The same commands work unchanged in cmd and bash.
+
+For the focused browser control regression, also run (Node.js is needed only for this check):
+
+```sh
+node test/WebControlsTest.cjs
+```
+
+This executes the actual table/control rendering functions with DOM stubs and checks Push, win, and loss. It does not replace a manual browser smoke test. JUnit HTTP tests do not execute browser JavaScript.
 
 In Eclipse: create a Java project, add `src` and `test` as source folders, add `lib/junit-platform-console-standalone-1.10.2.jar` to the build path, then right-click `test` and choose Run As > JUnit Test. Run `Game` as a Java application.
 
@@ -85,7 +99,7 @@ Each entry gives what was built, then the spec's estimate, then whether they mat
 - `GameHistory.record`, `CardHistory.record`: O(1), one `add` at the head. Spec O(1). Match.
 - `GameHistory.all`, `wins`, `losses`, `winRate`; `CardHistory.all`: O(n), one `toArray` walk. Spec O(n). Match.
 - `GameHistory.summaries`: O(n), one `toArray` walk. Not in the spec.
-- `CardCounter.observe`: O(s), it rebuilds the unseen counts to reject an impossible card. Spec O(1). No match; see Next Steps item 2.
+- `CardCounter.observe`: O(s), it scans the seen chain to reject an exhausted actual rank before grouping ten-point ranks for probability calculations. Spec O(1). No match; see Next Steps item 2.
 - `CardCounter.expectedReturn`, `variance`, `suggestedBet`: O(P) on the first call after a new card, each position costing ten array copies; measured 0.6 s for a fresh single deck and 0.75 s for three decks. Later calls with no new card are O(s). Spec O(B(n)), left undefined. B(n) is now P.
 - `ConsoleUI.prompt*`: O(1) per attempt. Spec O(1) per attempt. Match.
 - `Game.settle`: O(k). Not in the spec.
@@ -125,7 +139,7 @@ One line per public method. Each names the test for a normal call and the test f
 **`RoundResult`** (a record; `Outcome` and `Action` have no methods of their own)
 
 - Constructor: normal `RoundResultTest.constructorKeepsParts`, all four fields come back; bad input `RoundResultTest.constructorRejectsNullOutcome`, a null outcome throws `NullPointerException`.
-- `roundNumber()`, `outcome()`, `bet()`, `netChange()`, `equals`, `hashCode`: normal and bad `RoundResultTest.recordAccessorsAndEqualityCoverLossAndNull`, a loss record reads back its parts and compares false against null and a different record.
+- `round()`, `outcome()`, `bet()`, `netChange()`, `equals`, `hashCode`: normal and bad `RoundResultTest.recordAccessorsAndEqualityCoverLossAndNull`, a loss record reads back its parts and compares false against null and a different record.
 - `toString()`: normal `RoundResultTest.toStringShowsWinWithPlus`, a win prints "+$10"; edge `RoundResultTest.toStringShowsLossWithMinus`, a loss prints "-$10"; `RoundResultTest.toStringHandlesMinimumIntegerNetChange`, a net change of `Integer.MIN_VALUE` prints without overflowing.
 
 **`Shoe`**
@@ -169,7 +183,7 @@ One line per public method. Each names the test for a normal call and the test f
 **`CardCounter`**
 
 - Constructor: normal `CardCounterTest.constructorAcceptsOneDeck`; bad input `CardCounterTest.constructorRejectsZeroDecks`.
-- `observe(Card)`: normal `CardCounterTest.observeChangesExpectedReturn`, seeing a card moves the expected return; bad input `CardCounterTest.observeRejectsNullAndImpossibleCard`, null and a fifth ace from a one-deck shoe both throw; `CardCounterTest.repeatedAdviceAndRejectedObservationPreserveModel`, a rejected card leaves the advice unchanged.
+- `observe(Card)`: normal `CardCounterTest.observeChangesExpectedReturn`, seeing a card moves the expected return; bad input `CardCounterTest.observeRejectsNullAndImpossibleCard`, null and a fifth ace from a one-deck shoe both throw; `CardCounterTest.repeatedAdviceAndRejectedObservationPreserveModel`, a rejected card leaves the advice unchanged; `observeRejectsExhaustedFaceRankWithoutChangingModel` and `observeAcceptsFaceRanksIndependentlyAcrossThreeDecks`, ten, jack, queen and king have separate rank limits in single- and three-deck shoes.
 - `expectedReturn()`: normal `CardCounterTest.expectedReturnOfFreshDeckMatchesModel`, −0.0193 for a fresh deck; bad state `CardCounterTest.expectedReturnRejectsTooFewUnseenCards`, 31 unseen cards throws.
 - `variance()`: normal `CardCounterTest.varianceOfFreshDeckMatchesModel`, 0.974 for a fresh deck; bad state `CardCounterTest.varianceRejectsTooFewUnseenCards`.
 - `resultChances()`: normal `CardCounterTest.resultChancesOfFreshDeckMatchModelAndAddToOne`, the worked example's four chances, adding to 1 and reproducing `expectedReturn()`, and the array is a copy; bad state `CardCounterTest.resultChancesRejectTooFewUnseenCards`.
@@ -197,13 +211,13 @@ One line per public method. Each names the test for a normal call and the test f
 - Constructor and `phase()`: normal `WebGameTest.constructorStartsAtDeposit`; bad input `WebGameTest.constructorRejectsNullRandom`.
 - `deposit(int)`: normal `WebGameTest.depositOpensBankrollAndAsksForBet`; bad input `WebGameTest.depositRejectsBadAmountsAndRepeats`, zero, negative and a second deposit.
 - `bet(int)`: normal `WebGameTest.betDealsAndHidesDealerHoleCard`, four cards dealt and only the up card sent; bad input `WebGameTest.betRejectsBadAmountsAndWrongPhase`; edge `WebGameTest.betSettlesBlackjacksWithoutATurn`.
-- `hit()`: normal `WebGameTest.hitAddsACardAndKeepsTheTurn`; bad input `WebGameTest.hitRejectsWrongPhase`; edge `WebGameTest.hitBustEndsRound`.
-- `stand()`: normal `WebGameTest.standPlaysDealerAndSettles`, seed 1 ends at $110 with the hole card revealed; bad input `WebGameTest.standRejectsWrongPhase`; edge `WebGameTest.standThatBreaksThePlayerEndsSession`.
+- `hit()`: normal `WebGameTest.hitAddsACardAndKeepsTheTurn`; bad input `WebGameTest.hitRejectsWrongPhase`; edge `WebGameTest.hitBustEndsRound` and `hitToTwentyOneAutomaticallyStandsAndSettles`.
+- `stand()`: normal `WebGameTest.standPlaysDealerAndSettles`, seed 1 ends at $110 with the hole card revealed; bad input `WebGameTest.standRejectsWrongPhase`; edge `WebGameTest.standThatBreaksThePlayerEndsSession`, `standPushReturnsBetAndAllowsNextRound`, and `standKeepsDealerAtSoftSeventeen`.
 - `nextRound()`: normal `WebGameTest.nextRoundRecomputesAdvice`; bad input `WebGameTest.nextRoundRejectsWrongPhase`; edge `WebGameTest.nextRoundShufflesBelowCutCard`, the shoe and card trackers reset while the round history survives.
 - `quit()`: normal `WebGameTest.quitEndsSession`; bad input `WebGameTest.quitRejectsMidRoundAndBeforeDeposit`, a bet on the table cannot be abandoned.
-- `stateJson()`: normal `WebGameTest.stateJsonOfFreshSession`; edge `WebGameTest.stateJsonCountsUnseenCardsByRank`.
+- `stateJson()`: normal `WebGameTest.stateJsonOfFreshSession`; edge `WebGameTest.stateJsonCountsUnseenCardsByRank`; privacy regression `WebGameTest.stateJsonHidesHoleFromHistoryAndCountsUntilSettlement`, including duplicate cards and a hit before revealing the hole card.
 - `start(WebGame, int)`: normal `WebGameTest.startServesPageAndMoves`, real HTTP requests for the page, a word, a negative deposit, an oversized bet, a round and a restart; bad input `WebGameTest.startRejectsNullGameAndBadPort`.
-- `main(String[])`: normal `WebGameTest.mainStartsServerAndPrintsAddress`; bad input `WebGameTest.mainRejectsNonNumericPort`, a word prints the usage.
+- `main(String[])`: normal `WebGameTest.mainStartsServerAndPrintsAddress`; bad input `WebGameTest.mainRejectsNonNumericPort` and `mainRejectsOutOfRangePortsWithoutCrashing`, invalid text and ports outside 0..65535 print usage without starting a server.
 
 **`LinkedChain`** (the unchanged starter; tested so its real behaviour is on record)
 
@@ -237,6 +251,17 @@ Each item gives what `Updated Spec.docx` said, what was built, why, and where th
 12. **End of input.** The spec never named it. `ConsoleUI` now throws `InputEndedException`, a subtype of the `IllegalStateException` the spec promised, and `Game.run` catches that subtype, refunds an unfinished bet, prints the history and exits with status 0. Origin: the October 15 test pass, closing the crash listed in the first version of this README.
 13. **Two round-flow rules.** A dealer blackjack settles the round without asking the player for an action, and a player total of 21 stands without a prompt. The spec's section 6 names the dealer-blackjack case; the auto-stand removes a prompt whose only legal answer was stand. Origin: the October 15 test pass.
 
+### October 22 final-build fixes
+
+- `renderTable` no longer adds an empty CSS class for a Push, allowing Hit/Stand to be replaced with next-round controls. `test/WebControlsTest.cjs` checks the transition for Push, win, and loss.
+- `WebGame.stateJson` excludes the dealer hole-card occurrence from public history and rank counts during the player turn. Internal card tracking still includes every dealt card. Consequently, publicly unseen cards equal the undealt shoe plus the face-down card until settlement. Duplicate visible cards are preserved.
+- A balance of `Integer.MAX_VALUE` now ends either interface cleanly, with the full balance and history preserved, rather than offering a bet that must be rejected. This applies both to an initial deposit and to a win reaching the limit. Overflow checks remain in `Bankroll`.
+- `CardCounter.observe` now rejects a fifth ten, jack, queen, or king in a one-deck shoe (or a thirteenth in three decks), before grouping their values for the model. Rejected observations leave the model unchanged. `WebGame.main` now handles out-of-range numeric ports with usage text instead of an uncaught exception.
+- Web rule regressions now cover hitting to 21, a Push returning the bet and allowing the next round, and the dealer standing on soft 17.
+- The system diagram now matches the final classes and five chain instances. These fixes were requested by David and implemented with AI assistance; see Attribution.
+
+The balance-cap tests are `GameTest.runEndsAtMaximumDepositWithoutAskingForBet`, `GameTest.runEndsAfterWinReachesBalanceLimit`, `WebGameTest.depositAtBalanceLimitEndsSessionWithoutLosingMoney`, and `WebGameTest.winningToBalanceLimitEndsSessionAndPreservesHistory`.
+
 ### What changed in the LinkedChain
 
 Nothing. `src/LinkedChain.java` is the file we were given. The application uses `add`, `remove()`, `size`, `isEmpty` and `toArray`. Two properties of the starter shaped the application code: it rejects `null` with `IllegalArgumentException` (so `remove()` returning `null` can only mean an empty chain, which is how `Shoe.deal` detects an empty shoe), and `toArray` wants an array of at least `size()` elements (so the `all()` methods build one of exactly that size). `LinkedChainTest` records both properties.
@@ -248,7 +273,7 @@ Nothing. `src/LinkedChain.java` is the file we were given. The application uses 
 
 ### What doesn't work yet
 
-Every MVP feature from the scope runs, and all 148 tests pass. What remains:
+The final-build verification ran 159 JUnit tests with zero failures, plus the browser control regression. These results establish the tested cases, not complete branch coverage or an independent proof of the probability model. What remains:
 
 - **Advice delay.** Each round pauses about 0.75 seconds while the counter runs the model over 156 cards.
 - **`CardCounter.observe` is O(s) where the spec estimated O(1)**, because it recounts the seen chain to reject a card the shoe cannot contain.
@@ -258,53 +283,61 @@ Every MVP feature from the scope runs, and all 148 tests pass. What remains:
 ### What is left to finish the MVP, in order
 
 1. Each teammate reads the files they own and fixes anything they disagree with. Owner: everyone.
-2. Keep an `EnumMap<Rank, Integer> seenCounts` next to the chain in `CardCounter`, incremented in `observe`, so the impossible-card check reads one entry (O(1), as the spec estimated) and rejects per rank rather than per ten-point bucket; `unseen()` then subtracts the thirteen counts from the fresh composition instead of walking the chain. Owner: [name].
+2. Deferred until after the final demo: count caching in `CardCounter.observe`. Actual ranks are now validated separately, but observation still walks the seen chain (O(s)). Owner not assigned; the team must choose an owner before resuming this optional optimization.
 
 ### Stretch goals from the scope
 
 - **Card counting.** A stretch goal in the scope; the updated spec (section 7) moved it into the MVP. Built and running: `CardCounter` prints the expected return and the Kelly bet before every round, and `CardCounterTest` checks it against the model's worked example.
 - **ASCII card art on the console.** Built: `Hand.toArt()` draws each hand as boxes, and `Game` prints the player's hand with it after the deal and each hit, and the dealer's whole hand at the end of each round.
-- **Show the model's hit-or-stand advice during the round.** Committed; this one is new and was not in the scope. `CardCounter` already computes it (row 7); it needs one public method and one line in `Game.playRound`.
+- **Show the model's hit-or-stand advice during the round.** Deferred. It is not exposed by the final public API; the existing ASCII-art stretch is complete.
 - **Splitting pairs.** Dropped. We're keeping the BlackJack simple.
 - **Cheating dealer.** Dropped. Redundant by the linkedchain.
 - **Multiple players.** Dropped. Out of Scope.
 
 ### New tests the added work needs
 
-- **O(1) `observe` (item 2).** No new behaviour; the existing `CardCounterTest.observe*` and `repeatedAdviceAndRejectedObservationPreserveModel` tests must still pass.
+- **Deferred count caching (item 2).** Preserve the existing `CardCounterTest.observe*` and `repeatedAdviceAndRejectedObservationPreserveModel` results. The new `observeRejectsExhaustedFaceRankWithoutChangingModel` and `observeAcceptsFaceRanksIndependentlyAcrossThreeDecks` tests already verify rank limits and unchanged probabilities after a rejected observation.
 
 ## Attribution
 
 Every source file was drafted by Marcos from `Docs/Updated Spec.docx`, `Docs/Prototype-Roadmap.md` and `blackjack-expected-return-model.md`. On October 15 David Moon revised `Bankroll`, `ConsoleUI` and `Game` (overflow checks, end-of-input handling, dealer blackjack, auto-stand on 21) and extended the tests. Each file's reviewer reads the file, changes what they disagree with, and is the person who defends it at the grading session.
 
-The test files were drafted by an AI assistant so that every branch of every public method has a test. We have no coverage tool that warns us of an uncovered branch, so the assistant fills that role: it reads each method and writes a case for each path. Marcos and David Moon reviewed every test and ran the suite.
+The earlier attribution records most Java tests as AI-drafted and reviewed by Marcos and David Moon; `LinkedChainTest` is attributed to David Moon. The suite includes normal, invalid-input, and boundary cases. No instrumented branch-coverage measurement has been made, so we do not claim every branch is covered.
 
-- `src/LinkedChain.java`: CS 2114 staff; provided, unchanged.
-- `src/Rank.java`: drafted by Marcos; reviewed by Madeline Mehfoud.
-- `src/Suit.java`: drafted by Marcos; reviewed by Madeline Mehfoud.
-- `src/Card.java`: drafted by Marcos; reviewed by Madeline Mehfoud.
-- `src/Outcome.java`: drafted by Marcos; reviewed by Shreyas.
-- `src/Action.java`: drafted by Marcos; reviewed by Shreyas.
-- `src/RoundResult.java`: drafted by Marcos; reviewed by Shreyas.
-- `src/Shoe.java`: drafted by Marcos; reviewed by Madeline Mehfoud.
-- `src/Hand.java`: drafted by Marcos; reviewed by Madeline Mehfoud.
-- `src/Bankroll.java`: drafted by Marcos; overflow checks added by David Moon; reviewed by Shreyas.
-- `src/GameHistory.java`: drafted by Marcos; reviewed by Shreyas.
-- `src/CardHistory.java`: drafted by Marcos; reviewed by Shreyas.
-- `src/CardCounter.java`: model drafted and coded by Marcos with genAI assistance; worked-example numbers checked by running the code; reviewed by Shreyas. `resultChances()` added on October 15 for the web table, genAI-assisted.
-- `src/WebGame.java`: drafted by Marcos with genAI assistance on October 15; checked by playing rounds in a browser; not yet reviewed.
-- `web/index.html`: drafted by Marcos with genAI assistance on October 15; charts checked against the counter's printed numbers; not yet reviewed.
-- `src/ConsoleUI.java`: drafted by Marcos; `InputEndedException` added by David Moon; reviewed by David Moon.
-- `src/Game.java`: drafted by Marcos; end-of-input handling, dealer blackjack and auto-stand added by David Moon; reviewed by David Moon.
-- `test/CardTest.java`: AI-drafted for branch coverage; extended and reviewed by David Moon; reviewed by Marcos; run.
-- `test/RoundResultTest.java`: AI-drafted for branch coverage; extended and reviewed by David Moon; reviewed by Marcos; run.
-- `test/ShoeTest.java`: AI-drafted for branch coverage; reviewed by Marcos and David Moon; run.
-- `test/HandTest.java`: AI-drafted for branch coverage; extended and reviewed by David Moon; reviewed by Marcos; run.
-- `test/BankrollTest.java`: AI-drafted for branch coverage; extended and reviewed by David Moon; reviewed by Marcos; run.
-- `test/GameHistoryTest.java`: AI-drafted for branch coverage; reviewed by Marcos and David Moon; run.
-- `test/CardHistoryTest.java`: AI-drafted for branch coverage; reviewed by Marcos and David Moon; run.
-- `test/CardCounterTest.java`: AI-drafted for branch coverage; extended and reviewed by David Moon; reviewed by Marcos; run.
-- `test/ConsoleUITest.java`: AI-drafted for branch coverage; extended and reviewed by David Moon; reviewed by Marcos; run.
-- `test/GameTest.java`: AI-drafted for branch coverage, seeds 1 and 2 chosen by running the game; extended and reviewed by David Moon; reviewed by Marcos; run.
-- `test/LinkedChainTest.java`: written by David Moon; reviewed by Marcos; run.
-- `test/WebGameTest.java`: AI-drafted for branch coverage, seeds 3, 16 and 20 chosen by running the game; reviewed by Marcos; run.
+For the October 22 final-build fixes, David authorized an AI assistant to implement the Push rendering correction, public-state hole-card filtering, balance-limit session handling, actual-rank validation in the counter, server-port validation, regression tests, and documentation/diagram updates. The assistant ran Java 17 compilation, the full JUnit suite, and the focused Node rendering regression. David is credited as the contributor for these changes; this does not assert that David manually reviewed every new line or that a full browser smoke test was performed.
+
+| File | Contributor(s) and role |
+|---|---|
+| `src/LinkedChain.java` | CS 2114 staff; provided, unchanged. |
+| `src/Rank.java` | drafted by Marcos; reviewed by Madeline Mehfoud. |
+| `src/Suit.java` | drafted by Marcos; reviewed by Madeline Mehfoud. |
+| `src/Card.java` | drafted by Marcos; reviewed by Madeline Mehfoud. |
+| `src/Outcome.java` | drafted by Marcos; reviewed by Shreyas. |
+| `src/Action.java` | drafted by Marcos; reviewed by Shreyas. |
+| `src/RoundResult.java` | drafted by Marcos; reviewed by Shreyas. |
+| `src/Shoe.java` | drafted by Marcos; reviewed by Madeline Mehfoud. |
+| `src/Hand.java` | drafted by Marcos; reviewed by Madeline Mehfoud. |
+| `src/Bankroll.java` | drafted by Marcos; overflow checks added by David Moon; reviewed by Shreyas. |
+| `src/GameHistory.java` | drafted by Marcos; reviewed by Shreyas. |
+| `src/CardHistory.java` | drafted by Marcos; reviewed by Shreyas. |
+| `src/CardCounter.java` | model drafted and coded by Marcos with genAI assistance; worked-example numbers checked by running the code; reviewed by Shreyas. `resultChances()` added on October 15 for the web table, genAI-assisted. David: final-build actual-rank validation, AI-assisted. |
+| `src/WebGame.java` | drafted by Marcos with genAI assistance on October 15; checked by playing rounds in a browser; not yet reviewed. David: final-build public-state privacy, balance-limit handling and port validation, AI-assisted. |
+| `web/index.html` | drafted by Marcos with genAI assistance on October 15; charts checked against the counter's printed numbers; not yet reviewed. David: Push rendering fix, AI-assisted. |
+| `src/ConsoleUI.java` | drafted by Marcos; `InputEndedException` added by David Moon; reviewed by David Moon. |
+| `src/Game.java` | drafted by Marcos; end-of-input handling, dealer blackjack and auto-stand added by David Moon; reviewed by David Moon. David: final-build balance-limit handling, AI-assisted. |
+| `test/CardTest.java` | AI-drafted; extended and reviewed by David Moon; reviewed by Marcos; run. |
+| `test/RoundResultTest.java` | AI-drafted; extended and reviewed by David Moon; reviewed by Marcos; run. |
+| `test/ShoeTest.java` | AI-drafted; reviewed by Marcos and David Moon; run. |
+| `test/HandTest.java` | AI-drafted; extended and reviewed by David Moon; reviewed by Marcos; run. |
+| `test/BankrollTest.java` | AI-drafted; extended and reviewed by David Moon; reviewed by Marcos; run. |
+| `test/GameHistoryTest.java` | AI-drafted; reviewed by Marcos and David Moon; run. |
+| `test/CardHistoryTest.java` | AI-drafted; reviewed by Marcos and David Moon; run. |
+| `test/CardCounterTest.java` | AI-drafted; extended and reviewed by David Moon; reviewed by Marcos; run. David: exhausted-face-rank regressions, AI-assisted. |
+| `test/ConsoleUITest.java` | AI-drafted; extended and reviewed by David Moon; reviewed by Marcos; run. |
+| `test/GameTest.java` | AI-drafted, seeds 1 and 2 chosen by running the game; extended and reviewed by David Moon; reviewed by Marcos; run. David: balance-limit regressions, AI-assisted. |
+| `test/LinkedChainTest.java` | written by David Moon; reviewed by Marcos; run. |
+| `test/WebGameTest.java` | AI-drafted, seeds 3, 16 and 20 chosen by running the game; reviewed by Marcos; run. David: hidden-card privacy, balance-limit, port-validation and web-rule regressions, AI-assisted. |
+| `test/WebControlsTest.cjs` | David: Push/win/loss rendering regression, AI-assisted; run with Node.js. |
+| `Docs/system-diagram.mmd` | David: final implementation diagram, AI-assisted. |
+| `Docs/system-diagram.png` | David: updated diagram image, AI-assisted; visually inspected by the assistant. |
+| `README.md` | David: final-build documentation and attribution-table update, AI-assisted; earlier contributor records preserved. |

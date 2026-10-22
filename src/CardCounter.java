@@ -95,8 +95,16 @@ public class CardCounter
     public void observe(Card card)
     {
         Objects.requireNonNull(card, "card must not be null");
-        int rank = rankIndex(card);
-        if (unseen()[rank] == 0)
+        int observed = 0;
+        for (Card dealt : seen.toArray(new Card[seen.size()]))
+        {
+            if (dealt.rank() == card.rank())
+            {
+                observed++;
+            }
+        }
+        // Validate the actual rank before combining ten-point ranks for the model.
+        if (observed >= 4L * decks)
         {
             throw new IllegalStateException("Every " + card.rank() + " in a "
                 + decks + "-deck shoe has already been seen");

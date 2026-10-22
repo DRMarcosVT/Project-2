@@ -1,4 +1,5 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -79,6 +80,37 @@ public class CardCounterTest
         observeAllOf(counter, Rank.ACE);
         assertThrows(IllegalStateException.class,
             () -> counter.observe(new Card(Rank.ACE, Suit.SPADES)));
+    }
+
+    /** Face ranks must be checked separately even though each scores ten. */
+    @Test
+    public void observeRejectsExhaustedFaceRankWithoutChangingModel()
+    {
+        for (Rank rank : new Rank[] {Rank.TEN, Rank.JACK, Rank.QUEEN, Rank.KING})
+        {
+            CardCounter counter = new CardCounter(1);
+            observeAllOf(counter, rank);
+            double[] before = counter.resultChances();
+            assertThrows(IllegalStateException.class,
+                () -> counter.observe(new Card(rank, Suit.SPADES)));
+            assertArrayEquals(before, counter.resultChances(), 0.0);
+        }
+    }
+
+    /** Three decks allow twelve of each face rank, not twelve ten-point cards total. */
+    @Test
+    public void observeAcceptsFaceRanksIndependentlyAcrossThreeDecks()
+    {
+        CardCounter counter = new CardCounter(3);
+        for (Rank rank : new Rank[] {Rank.TEN, Rank.JACK, Rank.QUEEN, Rank.KING})
+        {
+            for (int deck = 0; deck < 3; deck++)
+            {
+                observeAllOf(counter, rank);
+            }
+            assertThrows(IllegalStateException.class,
+                () -> counter.observe(new Card(rank, Suit.SPADES)));
+        }
     }
 
     // ---- expectedReturn() ----

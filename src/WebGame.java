@@ -63,7 +63,7 @@ public class WebGame
         PLAYER_TURN,
         /** The round is settled; waiting for next round or quit. */
         ROUND_OVER,
-        /** The session has ended: the player quit or is out of money. */
+        /** The session ended: quit, out of money, or balance at the int limit. */
         OVER
     }
 
@@ -109,7 +109,7 @@ public class WebGame
     /**
      * Starts the program: serves the table on DEFAULT_PORT, or on the port
      * given as the only argument, and opens it in the default browser.
-     * An argument that is not a whole number prints the usage and returns.
+     * A port that is not a whole number in 0..65535 prints usage and returns.
      *
      * @param args optionally the port number
      * @throws IOException if the port cannot be opened
@@ -122,8 +122,12 @@ public class WebGame
             try
             {
                 port = Integer.parseInt(args[0].trim());
+                if (port < 0 || port > 65535)
+                {
+                    throw new IllegalArgumentException("Port must be in 0..65535");
+                }
             }
-            catch (NumberFormatException e)
+            catch (IllegalArgumentException e)
             {
                 System.out.println("Usage: java -cp out WebGame [port]");
                 return;
@@ -348,6 +352,12 @@ public class WebGame
     /** Runs the counter for the coming round and waits for the bet. */
     private void startBetting()
     {
+        if (bankroll.balance() == Integer.MAX_VALUE)
+        {
+            phase = Phase.OVER;
+            message = "Balance limit reached; session ended. Your balance is preserved.";
+            return;
+        }
         edge = counter.expectedReturn();
         variance = counter.variance();
         chances = counter.resultChances();
@@ -363,6 +373,11 @@ public class WebGame
         netChange = paidBack - bet;
         history.record(new RoundResult(round, outcome, bet, netChange));
         phase = bankroll.isBroke() ? Phase.OVER : Phase.ROUND_OVER;
+        if (bankroll.balance() == Integer.MAX_VALUE)
+        {
+            phase = Phase.OVER;
+            message = "Balance limit reached; session ended. Your balance is preserved.";
+        }
     }
 
     // ------------------------------------------------------------------
@@ -379,6 +394,7 @@ public class WebGame
      */
     public synchronized String stateJson()
     {
+        List<Card> visible = visibleCards();
         StringBuilder sb = new StringBuilder("{");
         field(sb, "phase", phase.name());
         sb.append(",\"round\":").append(round);
@@ -397,10 +413,10 @@ public class WebGame
         else
         {
             sb.append("{\"remaining\":").append(shoe.cardsRemaining())
-              .append(",\"seen\":").append(cardHistory.all().size())
+              .append(",\"seen\":").append(visible.size())
               .append(",\"total\":").append(Game.DECKS * 52)
               .append(",\"shuffled\":").append(shuffled)
-              .append(",\"unseenByRank\":").append(unseenByRank())
+              .append(",\"unseenByRank\":").append(unseenByRank(visible))
               .append('}');
         }
 
@@ -441,20 +457,33 @@ public class WebGame
 
         sb.append(",\"cardsDealt\":[");
         separator = "";
-        if (cardHistory != null)
+        for (Card c : visible)
         {
-            for (Card c : cardHistory.all())
-            {
-                sb.append(separator).append(card(c));
-                separator = ",";
-            }
+            sb.append(separator).append(card(c));
+            separator = ",";
         }
         sb.append("]}");
         return sb.toString();
     }
 
-    /** Row 2 of the model from the public side: fresh shoe minus cards seen. */
-    private String unseenByRank()
+    /** A public snapshot; the internal history still records every dealt card. */
+    private List<Card> visibleCards()
+    {
+        List<Card> visible = new ArrayList<>();
+        if (cardHistory != null)
+        {
+            visible.addAll(cardHistory.all());
+        }
+        if (phase == Phase.PLAYER_TURN)
+        {
+            // History is newest first: only player hits follow the fourth (hole) card.
+            visible.remove(playerCards.size() - 2);
+        }
+        return visible;
+    }
+
+    /** Fresh shoe minus publicly visible cards, including the hidden card as unseen. */
+    private String unseenByRank(List<Card> visible)
     {
         int[] n = new int[11];
         for (int rank = 1; rank <= 9; rank++)
@@ -462,7 +491,7 @@ public class WebGame
             n[rank] = 4 * Game.DECKS;
         }
         n[10] = 16 * Game.DECKS;
-        for (Card c : cardHistory.all())
+        for (Card c : visible)
         {
             int value = c.rank().value();
             n[value == 11 ? 1 : value]--;

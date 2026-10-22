@@ -321,8 +321,8 @@ For the October 22 final-build fixes, David authorized an AI assistant to implem
 | `src/GameHistory.java` | drafted by Marcos; reviewed by Shreyas. |
 | `src/CardHistory.java` | drafted by Marcos; reviewed by Shreyas. |
 | `src/CardCounter.java` | model drafted and coded by Marcos with genAI assistance; worked-example numbers checked by running the code; reviewed by Shreyas. `resultChances()` added on October 15 for the web table, genAI-assisted. David: final-build actual-rank validation, AI-assisted. |
-| `src/WebGame.java` | drafted by Marcos with genAI assistance on October 15; checked by playing rounds in a browser; not yet reviewed. David: final-build public-state privacy, balance-limit handling and port validation, AI-assisted. |
-| `web/index.html` | drafted by Marcos with genAI assistance on October 15; charts checked against the counter's printed numbers; not yet reviewed. David: Push rendering fix, AI-assisted. |
+| `src/WebGame.java` | drafted by Marcos with genAI assistance on October 15; checked by playing rounds in a browser; reviewed by Marcos. David: final-build public-state privacy, balance-limit handling and port validation, AI-assisted. |
+| `web/index.html` | drafted by Marcos with genAI assistance on October 15; charts checked against the counter's printed numbers; reviewed by Marcos. David: Push rendering fix, AI-assisted. |
 | `src/ConsoleUI.java` | drafted by Marcos; `InputEndedException` added by David Moon; reviewed by David Moon. |
 | `src/Game.java` | drafted by Marcos; end-of-input handling, dealer blackjack and auto-stand added by David Moon; reviewed by David Moon. David: final-build balance-limit handling, AI-assisted. |
 | `test/CardTest.java` | AI-drafted; extended and reviewed by David Moon; reviewed by Marcos; run. |
